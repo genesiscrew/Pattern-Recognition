@@ -31,7 +31,7 @@ ask2 = np.loadtxt('5Years.txt', unpack=True,
 patFound = 0
 average = 0
 patternPrice = 0
-PredictionLag = 60
+PredictionLag = 15
 patternSize = 240
 
 
@@ -80,11 +80,7 @@ def patternStorage():
         currentPoint = avgLineFull[y]
 
 
-        try:
-            avgOutcome = reduce(lambda x, y: x + y, outcomeRange) / len(outcomeRange)
-        except Exception, e:
-            print str(e)
-            avgOutcome = 0
+
         #futureOutcome = percentChange(currentPoint, avgOutcome)
         futureOutcome = float(avgLineFull[y+PredictionLag])-currentPoint
 
@@ -334,7 +330,7 @@ def patternRecognition():
         #sim1 = 100.00 - abs(percentChange(eachPattern[i], patForRec[i]))
         #simArray.append(sim1)
         howSim = np.average(diff)
-        if howSim > 80:
+        if howSim > 85:
             
             patdex = patternAr.index(eachPattern)
             patFound = 1
@@ -364,40 +360,35 @@ def patternRecognition():
             
             #plt.plot(xp, eachPatt)
             ####################
-            plt.scatter(35, performanceAr[futurePoints],c=pcolor,alpha=.4)
-        realOutcomeRange = allData[toWhat+25:toWhat+35]
-        realAvgOutcome = reduce(lambda x, y: x + y, realOutcomeRange) / len(realOutcomeRange)
+            #plt.scatter(35, performanceAr[futurePoints],c=pcolor,alpha=.4)
+        #realOutcomeRange = allData[toWhat+25:toWhat+35]
+       # realAvgOutcome = reduce(lambda x, y: x + y, realOutcomeRange) / len(realOutcomeRange)
         average =  np.average(futureP)
 
         realMovement = float(allData[toWhat+PredictionLag])-allData[toWhat]
         rMove = realMovement
         #print('the real movement')
         #print(realMovement)
-        plt.scatter(40, realMovement, c='#54fff7',s=25)
+        #plt.scatter(40, realMovement, c='#54fff7',s=25)
         #plt.plot(xp, patForRec, '#54fff7', linewidth = 3)
-        plt.grid(True)
-        plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
+        #plt.grid(True)
+        #plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
         #plt.show()
 
             
             
 
-array1 =np.array([5, 5, 5, 5, 5], dtype='float32')
-array2 = np.array([-2, -2 ,- 2 ,-2 ,-2])
-diff = ((array1-array2) / array2)
-print(diff)
-
 dataLength = int(ask.shape[0])
 print 'data length is', dataLength
 
 allData = ((ask+ask)/2)
-allData = allData[240:]
+allData = allData[240:-5]
 avgLineFull = ((ask2+ask2)/2)
-avgLineFull = avgLineFull[:300000]
+avgLineFull = avgLineFull[:600000]
 
 #toWhat = 53500
-toWhat = 3000
-threshold = 0
+toWhat = 300
+threshold = 00015
 win = 0
 loss = 0
 numTrades = 0
@@ -420,10 +411,11 @@ errorList = []
 #performanceAr = updatedPerformArray
 
 #while toWhat < dataLength:
-for x in xrange(1000):
+for x in xrange(6000):
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
-    rsi = tec.rsi(np.array(avgLine[-patternSize:]))
+    rsiup = tec.rsi(np.array(avgLine[-60:]))
+    rsidown = tec.rsi(np.array(avgLine[-60:]))
 
     
     
@@ -438,7 +430,7 @@ for x in xrange(1000):
     patternRecognition()
     #print('pattern actual price')
     #print(patternPrice)
-    #print('runnign to what')
+    #print('runnign to what')x
     #print(toWhat)
     #lastPrice = ask[toWhat]
     #futurePrice = ask[toWhat+30]
@@ -449,8 +441,8 @@ for x in xrange(1000):
 
 
     
-    if patFound == 1 and abs(average) > threshold and rsi[-1] < 30:
-        if average> 0 and ask[toWhat+PredictionLag] - ask[toWhat] > 0:
+    if patFound == 1 and average > threshold and rsidown[-1] < 20:
+        if average > 0 and ask[toWhat+PredictionLag] - ask[toWhat] > 0:
             win = win + 1
             print('trade won !!!')
             numTrades = numTrades + 1
@@ -458,11 +450,12 @@ for x in xrange(1000):
             errorList.append(error)
         else:
             loss = loss + 1
+            print(rsidown[-1])
             print('trade Lost on up prediction:(')
             numTrades = numTrades + 1
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
-    elif patFound == 1 and abs(average) > threshold and rsi[-1] > 70:
+    elif patFound == 1 and average < threshold and rsiup[-1] > 80:
         if average < 0 and ask[toWhat+PredictionLag] - ask[toWhat] < 0:
             win = win + 1
             print('trade won !!!')
@@ -471,6 +464,7 @@ for x in xrange(1000):
             errorList.append(error)
         else:
             loss = loss + 1
+            print(rsiup[-1])
             print('trade Lost on down prediction:(')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
