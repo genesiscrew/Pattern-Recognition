@@ -774,13 +774,17 @@ for x in xrange(1500):
     currentMom = momentum[-9:-1]
     currentMomentum = np.amax(currentMom)
     currentMomentumDown = np.amin(currentMom)
-    if ((currentMomentum >= 0.02 and currentMomentum < 0.055) or currentMomentumDown <-0.03 or currentMomentum > 0.055) :
-        upmomentum = True
-        print("momentum is saying it will go up")
+    signUp = np.sign(currentMomentum)
+    signDown = np.sign(currentMomentumDown)
+    if signUp == 1:
+        if ((currentMomentum >= 0.02 and currentMomentum < 0.055) or currentMomentumDown <-0.03 or currentMomentum > 0.055) :
+            upmomentum = True
+            print("momentum is saying it will go up")
         
-    if ((currentMomentumDown <= -0.02 and currentMomentumDown > -0.055) or currentMomentum > 0.03 or currentMomentumDown > -0.055) :
-        downmomentum = True
-        print("momentum is saying it will go down")
+    if signDown == -1:
+        if ((currentMomentumDown >= -0.02 and currentMomentumDown < -0.055) or currentMomentum > 0.03 or currentMomentumDown > -0.055) :
+            downmomentum = True
+            print("momentum is saying it will go down")
         
     if averageMomentum < currentMomentum:
         PredictionLag = 15
@@ -824,7 +828,7 @@ for x in xrange(1500):
     currentOutcome = percentChange(ask[toWhat], avgOutcome)
    # print(currentOutcome)
     print(currentMomentum)
-    print(currentMomentum)
+    print(currentMomentumDown)
     
     if   (average > currentOutcome and average != 0 and abs(average) > threshold and upmomentum == True and patFound == 1):
         average = 0
