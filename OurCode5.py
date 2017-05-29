@@ -372,18 +372,18 @@ def patternRecognition():
         realOutcomeRange = allData[toWhat+PredictionLag-5:toWhat+PredictionLag+5]
         realAvgOutcome = reduce(lambda x, y: x + y, realOutcomeRange) / len(realOutcomeRange)
         average =  np.average(futureP)
-        plt.scatter(35, average,c=pcolor,alpha=.4)
+        #plt.scatter(35, average,c=pcolor,alpha=.4)
         #realMovement = float(allData[toWhat+PredictionLag])-allData[toWhat]
         realOutcome = percentChange(allData[toWhat],realAvgOutcome)
         #rMove = realMovement
         #print('the real movement')
         #print(realMovement)
-        plt.scatter(40, realOutcome, c='#54fff7',s=25)
+        #plt.scatter(40, realOutcome, c='#54fff7',s=25)
         #plt.plot(xp, patForRec, '#54fff7', linewidth = 3)
-        plt.grid(True)
+        #plt.grid(True)
         
-        plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
-        plt.show()
+        #plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
+       # plt.show()
 
 def sma(prices, period):
     """
@@ -753,6 +753,8 @@ bandwidthList = []
 for x in xrange(1500):
     upmomentum = False
     downmomentum = False
+    tradeup = False
+    tradeDown = False
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
     #avgLine = ((ask2+ask2)/2)
@@ -782,7 +784,7 @@ for x in xrange(1500):
             print("momentum is saying it will go up")
         
     if signDown == -1:
-        if ((currentMomentumDown >= -0.02 and currentMomentumDown < -0.055) or currentMomentum > 0.03 or currentMomentumDown > -0.055) :
+        if ((abs(currentMomentumDown) >= 0.02 and abs(currentMomentumDown) < 0.055) or currentMomentum > 0.03 or abs(currentMomentumDown) > 0.055) :
             downmomentum = True
             print("momentum is saying it will go down")
         
@@ -796,7 +798,11 @@ for x in xrange(1500):
     rsidown = rsi(np.array(avgLine[-patternSize:]))
 
     
-    
+    if upmomentum == True and downmomentum == True:
+        if averageMomentum  > 0:
+            tradeUp = True
+        elif averageMomentum < 0:
+            tradeDown = True
 
     
 
@@ -830,17 +836,17 @@ for x in xrange(1500):
     print(currentMomentum)
     print(currentMomentumDown)
     
-    if   ((average > currentOutcome and average != 0 and abs(average) > threshold and upmomentum == True and patFound == 1) or (abs(average) > threshold and upmomentum == True and downmomentum == False and currentMomentum > 0.06)):
+    if   ((average > currentOutcome and average != 0 and abs(average) > threshold and (upmomentum == True and tradeUp == True) and patFound == 1) or (abs(average) > threshold and upmomentum == True and tradeUp == True and currentMomentum > 0.06)):
         average = 0
         patFound = 0
         upmomentum = False
         if  ask[toWhat+PredictionLag-10] - ask[toWhat] > 0:
             win = win + 1
-            print('trade won !!!')
+            print('trade won on up !!!')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
-            time.sleep(5);
+            time.sleep(1);
         else:
             loss = loss + 1
             print(rsidown[-1])
@@ -848,18 +854,18 @@ for x in xrange(1500):
             numTrades = numTrades + 1
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
-            time.sleep(5);
-    elif (average < currentOutcome and average != 0 and abs(average) > threshold and downmomentum == True and patFound == 1 or (abs(average) > threshold and downmomentum == True and upmomentum == False and currentMomentumDown > -0.06)):
+            time.sleep(1);
+    elif (average < currentOutcome and average != 0 and abs(average) > threshold and (downmomentum == True and upmomentum == False) and patFound == 1 or (abs(average) > threshold and downmomentum == True and tradeDown == True and abs(currentMomentumDown) > 0.06)):
         patFound = 0
         average = 0
         downmomentum = False
         if  ask[toWhat+PredictionLag-10] - ask[toWhat] < 0:
             win = win + 1
-            print('trade won !!!')
+            print('trade won on down!!!')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
-            time.sleep(5);
+            time.sleep(1);
         else:
             loss = loss + 1
             print(rsiup[-1])
@@ -867,7 +873,7 @@ for x in xrange(1500):
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
-            time.sleep(5);
+            time.sleep(1);
 
             # get the last price, get the future price. find percentage change and compare to predicted
                                      
