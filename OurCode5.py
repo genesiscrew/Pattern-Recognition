@@ -725,7 +725,7 @@ avgLineFull = avgLineFull[:200000]
 
 #toWhat = 53500
 toWhat = 300
-threshold = 0.02
+threshold = 0.015
 win = 0
 loss = 0
 numTrades = 0
@@ -771,13 +771,14 @@ for x in xrange(1500):
     averageBandwidth = np.average(bandwidthList)
     averageMomentum =  abs(np.average(momentum))
 
-    currentMom = momentum[-7:-1]
+    currentMom = momentum[-9:-1]
     currentMomentum = np.amax(currentMom)
-    if ((currentMomentum >= 0.02 and currentMomentum < 0.03) or currentMomentum <-0.03) :
+    currentMomentumDown = np.amin(currentMom)
+    if ((currentMomentum >= 0.02 and currentMomentum < 0.055) or currentMomentumDown <-0.03 or currentMomentum > 0.055) :
         upmomentum = True
         print("momentum is saying it will go up")
         
-    if ((currentMomentum <= -0.02 and currentMomentum > -0.03) or currentMomentum >0.03) :
+    if ((currentMomentumDown <= -0.02 and currentMomentumDown > -0.055) or currentMomentum > 0.03 or currentMomentumDown > -0.055) :
         downmomentum = True
         print("momentum is saying it will go down")
         
@@ -823,12 +824,13 @@ for x in xrange(1500):
     currentOutcome = percentChange(ask[toWhat], avgOutcome)
    # print(currentOutcome)
     print(currentMomentum)
+    print(currentMomentum)
     
     if   (average > currentOutcome and average != 0 and abs(average) > threshold and upmomentum == True and patFound == 1):
         average = 0
         patFound = 0
         upmomentum = False
-        if  ask[toWhat+PredictionLag] - ask[toWhat] > 0:
+        if  ask[toWhat+PredictionLag-10] - ask[toWhat] > 0:
             win = win + 1
             print('trade won !!!')
             numTrades = numTrades + 1
@@ -847,7 +849,7 @@ for x in xrange(1500):
         patFound = 0
         average = 0
         downmomentum = False
-        if  ask[toWhat+PredictionLag] - ask[toWhat] < 0:
+        if  ask[toWhat+PredictionLag-10] - ask[toWhat] < 0:
             win = win + 1
             print('trade won !!!')
             numTrades = numTrades + 1
