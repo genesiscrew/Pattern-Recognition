@@ -830,7 +830,7 @@ for x in xrange(1500):
     print(currentMomentum)
     print(currentMomentumDown)
     
-    if   (average > currentOutcome and average != 0 and abs(average) > threshold and upmomentum == True and patFound == 1):
+    if   ((average > currentOutcome and average != 0 and abs(average) > threshold and upmomentum == True and patFound == 1) or (abs(average) > threshold and upmomentum == True and downmomentum == False and currentMomentum > 0.06)):
         average = 0
         patFound = 0
         upmomentum = False
@@ -849,7 +849,7 @@ for x in xrange(1500):
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
             time.sleep(5);
-    elif (average < currentOutcome and average != 0 and abs(average) > threshold and downmomentum == True and patFound == 1):
+    elif (average < currentOutcome and average != 0 and abs(average) > threshold and downmomentum == True and patFound == 1 or (abs(average) > threshold and downmomentum == True and upmomentum == False and currentMomentumDown > -0.06)):
         patFound = 0
         average = 0
         downmomentum = False
