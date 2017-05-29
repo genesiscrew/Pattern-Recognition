@@ -27,7 +27,7 @@ ask2 = np.loadtxt('5Years.txt', unpack=True,
 
 
 
-patFound = 0
+global patFound
 average = 0
 patternPrice = 0
 PredictionLag = 15
@@ -323,7 +323,7 @@ def graphRawFX():
 def patternRecognition():
 
     plotPatAr = []
-    
+    patFound = 0
     global average
     global patFound
     global realMovement
@@ -368,7 +368,7 @@ def patternRecognition():
           #  plt.plot(xp, eachPatt)
             ####################
            
-      
+        
         realOutcomeRange = allData[toWhat+PredictionLag-5:toWhat+PredictionLag+5]
         realAvgOutcome = reduce(lambda x, y: x + y, realOutcomeRange) / len(realOutcomeRange)
         average =  np.average(futureP)
@@ -485,7 +485,7 @@ def rsi(prices, period=14):
     """
     #period = rsiStack
     #period = 60
-    period = 14
+    period = 20
     num_prices = len(prices)
 
     if num_prices < period:
@@ -725,7 +725,7 @@ avgLineFull = avgLineFull[:200000]
 
 #toWhat = 53500
 toWhat = 300
-threshold = 0.03
+threshold = 0.02
 win = 0
 loss = 0
 numTrades = 0
@@ -768,9 +768,14 @@ for x in xrange(1500):
     averageBandwidth = np.average(bandwidthList)
     averageMomentum =  abs(np.average(momentum))
 
-    currentMomentum = momentum[-1]
-
-
+    currentMom = momentum[-5:-1]
+    currentMomentum = np.amax(currentMom)
+    if ((currentMomentum >= 0.02 and currentMomentum < 0.03) or currentMomentum <-0.03) :
+        upmomentum = True
+        
+    if ((currentMomentum <= -0.02 and currentMomentum > -0.03) or currentMomentum >0.03) :
+        downmomentum = True
+        
     if averageMomentum < currentMomentum:
         PredictionLag = 15
     else:
@@ -811,12 +816,13 @@ for x in xrange(1500):
         #outcomeRange = avgLineFull[y+20:y+30]
         #currentPoint = avgLineFull[y]
     currentOutcome = percentChange(ask[toWhat], avgOutcome)
-    print(currentOutcome)
-    print(average)
+   # print(currentOutcome)
+    print(currentMomentum)
     
-    if   (average > currentOutcome and average != 0 and abs(average) > threshold and rsiup[-1] < 40 and patFound == 1):
+    if   (average > currentOutcome and average != 0 and abs(average) > threshold and upmomentum == True and patFound == 1):
         average = 0
         patFound = 0
+        upmomentum = False
         if  ask[toWhat+PredictionLag] - ask[toWhat] > 0:
             win = win + 1
             print('trade won !!!')
@@ -832,9 +838,10 @@ for x in xrange(1500):
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
             time.sleep(5);
-    elif (average < currentOutcome and average != 0 and abs(average) > threshold and rsidown[-1] > 60 and patFound == 1):
+    elif (average < currentOutcome and average != 0 and abs(average) > threshold and downmomentum == True and patFound == 1):
         patFound = 0
         average = 0
+        downmomentum = False
         if  ask[toWhat+PredictionLag] - ask[toWhat] < 0:
             win = win + 1
             print('trade won !!!')
