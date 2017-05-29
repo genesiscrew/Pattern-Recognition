@@ -735,6 +735,7 @@ global patForRec
 updatedPerformArray = []
 optimalPatterns = []
 patternStorage()
+
 print('optimization complete')
 print('size of original pattern array')
 print(len(patternAr))
@@ -750,6 +751,8 @@ errorList = []
 #while toWhat < dataLength:
 bandwidthList = []
 for x in xrange(1500):
+    upmomentum = False
+    downmomentum = False
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
     #avgLine = ((ask2+ask2)/2)
@@ -768,13 +771,15 @@ for x in xrange(1500):
     averageBandwidth = np.average(bandwidthList)
     averageMomentum =  abs(np.average(momentum))
 
-    currentMom = momentum[-5:-1]
+    currentMom = momentum[-7:-1]
     currentMomentum = np.amax(currentMom)
     if ((currentMomentum >= 0.02 and currentMomentum < 0.03) or currentMomentum <-0.03) :
         upmomentum = True
+        print("momentum is saying it will go up")
         
     if ((currentMomentum <= -0.02 and currentMomentum > -0.03) or currentMomentum >0.03) :
         downmomentum = True
+        print("momentum is saying it will go down")
         
     if averageMomentum < currentMomentum:
         PredictionLag = 15
