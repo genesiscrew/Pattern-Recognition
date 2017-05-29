@@ -8,7 +8,6 @@ from numpy import loadtxt
 import time
 import sys
 import itertools
-from technical_indicators import technical_indicators as tec
 import multiprocessing
 
 
@@ -16,7 +15,7 @@ import multiprocessing
 totalStart = time.time()
 sys.setrecursionlimit(30000000)
 
-ask = np.loadtxt('option_data345.txt', unpack=True,
+ask = np.loadtxt('option_data135.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
 
@@ -32,7 +31,10 @@ patFound = 0
 average = 0
 patternPrice = 0
 PredictionLag = 15
-patternSize = 240
+patternSize = 120
+rsiStack = 0
+rsiUp = 0
+rsiDown = 0
 
 
 
@@ -49,19 +51,19 @@ def percentChange(startPoint,currentPoint):
 
 def patternStorage():
     '''
-    The goal of patternFinder is to begin collection of %change patterns
+    The goal of patternFinder is to begin collection of %chang e patterns
     in the tick data. From there, we also collect the short-term outcome
     of this pattern. Later on, the length of the pattern, how far out we
     look to compare to, and the length of the compared range be changed,
     and even THAT can be machine learned to find the best of all 3 by
     comparing success rates.'''
-    threshold2 = 0.0045
+    threshold2 = 0.0025
     startTime = time.time()
     
     
     #x = len(avgLine)-30
     x = len(avgLineFull)-patternSize
-    y = 61
+    y = patternSize + 1
     currentStance = 'none'
     p1 = 0
     while y < x:
@@ -72,17 +74,22 @@ def patternStorage():
 
                 
 
-
-
+        outcomeRange = avgLineFull[y+PredictionLag-5:y+PredictionLag+5]
+        try:
+            avgOutcome = reduce(lambda x, y: x + y, outcomeRange) / len(outcomeRange)
+        except Exception, e:
+            print str(e)
+            avgOutcome = 0
         #outcomeRange = avgLineFull[y+20:y+30]
         #currentPoint = avgLineFull[y]
-        outcomeRange = avgLineFull[y+25:y+35]
+        
         currentPoint = avgLineFull[y]
 
 
 
-        #futureOutcome = percentChange(currentPoint, avgOutcome)
-        futureOutcome = float(avgLineFull[y+PredictionLag])-currentPoint
+        futureOutcome = percentChange(currentPoint, avgOutcome)
+        #futureOutcome = avgOutcome-currentPoint
+        #futureOutcome = float(avgLineFull[y+PredictionLag])-currentPoint 
 
         '''
         print 'where we are historically:',currentPoint
@@ -97,7 +104,7 @@ def patternStorage():
             patternAr.append(pattern)
             performanceAr.append(futureOutcome)
         
-        y+=1
+        y+=20
 
     endTime = time.time()
    # print len(patternAr)
@@ -283,7 +290,7 @@ def currentPattern():
     a.fill(avgLine[-1-patternSize])
     #array1 = np.array([-5, -5, -5, -5, -5], dtype='float32')
     #array2 = np.array([2, 2, 2, 2, 2], dtype='float32')
-    diff = ((a - cp1) / abs(a))*100
+    diff = ((cp1-a) / abs(a))*100
     #cp1 = percentChange(avgLine[-patternSize-1],avgLine[-patternSize+i])
     #patForRec.append(cp1)
     return diff
@@ -316,7 +323,7 @@ def graphRawFX():
 def patternRecognition():
 
     plotPatAr = []
-    patFound = 0
+    
     global average
     global patFound
     global realMovement
@@ -326,16 +333,16 @@ def patternRecognition():
         #for i in xrange(patternSize):
         ar1 = np.array(eachPattern, dtype='float32')
         ar2 = np.array(patForRec, dtype='float32')
-        diff = 100 - (((ar1 - ar2) / abs(ar1)) * 100)
+        diff = 100 - abs((((ar1 - ar2) / abs(ar1)) * 100))
         #sim1 = 100.00 - abs(percentChange(eachPattern[i], patForRec[i]))
         #simArray.append(sim1)
         howSim = np.average(diff)
-        if howSim > 85:
+        if howSim > 75:
             
             patdex = patternAr.index(eachPattern)
             patFound = 1
-           # print('Pattern Found')
-            #xp = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
+            #print('Pattern Found')
+           # xp = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
             #############
 
             plotPatAr.append(eachPattern)
@@ -358,22 +365,352 @@ def patternRecognition():
                 pcolor = '#d40000'
                 #pcolor = '#000000'
             
-            #plt.plot(xp, eachPatt)
+          #  plt.plot(xp, eachPatt)
             ####################
-            #plt.scatter(35, performanceAr[futurePoints],c=pcolor,alpha=.4)
-        #realOutcomeRange = allData[toWhat+25:toWhat+35]
-       # realAvgOutcome = reduce(lambda x, y: x + y, realOutcomeRange) / len(realOutcomeRange)
+           
+      
+        realOutcomeRange = allData[toWhat+PredictionLag-5:toWhat+PredictionLag+5]
+        realAvgOutcome = reduce(lambda x, y: x + y, realOutcomeRange) / len(realOutcomeRange)
         average =  np.average(futureP)
-
-        realMovement = float(allData[toWhat+PredictionLag])-allData[toWhat]
-        rMove = realMovement
+        plt.scatter(35, average,c=pcolor,alpha=.4)
+        #realMovement = float(allData[toWhat+PredictionLag])-allData[toWhat]
+        realOutcome = percentChange(allData[toWhat],realAvgOutcome)
+        #rMove = realMovement
         #print('the real movement')
         #print(realMovement)
-        #plt.scatter(40, realMovement, c='#54fff7',s=25)
+        plt.scatter(40, realOutcome, c='#54fff7',s=25)
         #plt.plot(xp, patForRec, '#54fff7', linewidth = 3)
-        #plt.grid(True)
-        #plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
-        #plt.show()
+        plt.grid(True)
+        
+        plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
+        plt.show()
+
+def sma(prices, period):
+    """
+    Simple Moving Average (SMA) are used to smooth the data in an array to help
+    eliminate noise and identify trends.
+    In SMA, each value in the time period carries equal weight.
+    They do not predict price direction, but can be used to identify the
+    direction of the trend or define potential support and resistance levels.
+    SMA = (P1 + P2 + ... + Pn) / K
+    where K = n and Pn is the most recent price
+    http://www.financialwebring.org/gummy-stuff/MA-stuff.htm
+    http://www.csidata.com/?page_id=797
+    http://stockcharts.com/school/doku.php?st=moving+average&id=chart_school:technical_indicators:moving_averages
+    Input:
+      prices ndarray
+      period int > 1 and < len(prices)
+    Output:
+      smas ndarray
+    Test:
+    >>> import numpy as np
+    >>> import technical_indicators as tai
+    >>> prices = np.array([22.27, 22.19, 22.08, 22.17, 22.18, 22.13, 22.23,
+    ... 22.43, 22.24, 22.29, 22.15, 22.39, 22.38, 22.61, 23.36, 24.05, 23.75,
+    ... 23.83, 23.95, 23.63, 23.82, 23.87, 23.65, 23.19, 23.10, 23.33, 22.68,
+    ... 23.10, 22.40, 22.17])
+    >>> period = 10
+    >>> print(tai.sma(prices, period))
+    [ 22.221  22.209  22.229  22.259  22.303  22.421  22.613  22.765  22.905
+      23.076  23.21   23.377  23.525  23.652  23.71   23.684  23.612  23.505
+      23.432  23.277  23.131]
+    """
+    period = PredictionLag
+    num_prices = len(prices)
+
+    if num_prices < period:
+        # show error message
+        raise SystemExit('Error: num_prices < period')
+
+    sma_range = num_prices - period + 1
+
+    smas = np.zeros(sma_range)
+
+    # only required for the commented code below
+    #k = period
+
+    for idx in range(sma_range):
+        # this is the code, but using np.mean below is faster and simpler
+        #for period_num in range(period):
+        #    smas[idx] += prices[idx + period_num]
+        #smas[idx] /= k
+
+        smas[idx] = np.mean(prices[idx:idx + period])
+
+    return smas
+
+def rsi(prices, period=14):
+    """
+    The Relative Strength Index (RSI) is a momentum oscillator.
+    It oscillates between 0 and 100.
+    It is considered overbought/oversold when it's over 70/below 30.
+    Some traders use 80/20 to be on the safe side.
+    RSI becomes more accurate as the calculation period (min_periods)
+    increases.
+    This can be lowered to increase sensitivity or raised to decrease
+    sensitivity.
+    10-day RSI is more likely to reach overbought or oversold levels than
+    20-day RSI. The look-back parameters also depend on a security's
+    volatility.
+    Like many momentum oscillators, overbought and oversold readings for RSI
+    work best when prices move sideways within a range.
+    You can also look for divergence with price.
+    If the price has new highs/lows, and the RSI hasn't, expect a reversal.
+    Signals can also be generated by looking for failure swings and centerline
+    crossovers.
+    RSI can also be used to identify the general trend.
+    The RSI was developed by J. Welles Wilder and was first introduced in his
+    article in the June, 1978 issue of Commodities magazine, now known as
+    Futures magazine. It is detailed in his book New Concepts In Technical
+    Trading Systems.
+    http://www.csidata.com/?page_id=797
+    http://stockcharts.com/help/doku.php?id=chart_school:technical_indicators:relative_strength_in
+    Input:
+      prices ndarray
+      period int > 1 and < len(prices) (optional and defaults to 14)
+    Output:
+      rsis ndarray
+    Test:
+    >>> import numpy as np
+    >>> import technical_indicators as tai
+    >>> prices = np.array([44.55, 44.3, 44.36, 43.82, 44.46, 44.96, 45.23,
+    ... 45.56, 45.98, 46.22, 46.03, 46.17, 45.75, 46.42, 46.42, 46.14, 46.17,
+    ... 46.55, 46.36, 45.78, 46.35, 46.39, 45.85, 46.59, 45.92, 45.49, 44.16,
+    ... 44.31, 44.35, 44.7, 43.55, 42.79, 43.26])
+    >>> print(tai.rsi(prices))
+    [ 70.02141328  65.77440817  66.01226849  68.95536568  65.88342192
+      57.46707948  62.532685    62.86690858  55.64975092  62.07502976
+      54.39159393  50.10513101  39.68712141  41.17273382  41.5859395
+      45.21224077  37.06939108  32.85768734  37.58081218]
+    """
+    #period = rsiStack
+    #period = 60
+    period = 14
+    num_prices = len(prices)
+
+    if num_prices < period:
+        # show error message
+        raise SystemExit('Error: num_prices < period')
+
+    # this could be named gains/losses to save time/memory in the future
+    changes = prices[1:] - prices[:-1]
+    #num_changes = len(changes)
+
+    rsi_range = num_prices - period
+
+    rsis = np.zeros(rsi_range)
+
+    gains = np.array(changes)
+    # assign 0 to all negative values
+    masked_gains = gains < 0
+    gains[masked_gains] = 0
+
+    losses = np.array(changes)
+    # assign 0 to all positive values
+    masked_losses = losses > 0
+    losses[masked_losses] = 0
+    # convert all negatives into positives
+    losses *= -1
+
+    avg_gain = np.mean(gains[:period])
+    avg_loss = np.mean(losses[:period])
+
+    if avg_loss == 0:
+        rsis[0] = 100
+    else:
+        rs = avg_gain / avg_loss
+        rsis[0] = 100 - (100 / (1 + rs))
+
+    for idx in range(1, rsi_range):
+        avg_gain = ((avg_gain * (period - 1) + gains[idx + (period - 1)]) /
+                    period)
+        avg_loss = ((avg_loss * (period - 1) + losses[idx + (period - 1)]) /
+                    period)
+
+        if avg_loss == 0:
+            rsis[idx] = 100
+        else:
+            rs = avg_gain / avg_loss
+            rsis[idx] = 100 - (100 / (1 + rs))
+
+    return rsis
+
+def bb(prices, period, num_std_dev=2.0):
+    """
+    Bollinger bands (BB) are volatility bands placed above and below a moving
+    average.
+    Volatility is based on the standard deviation, which changes as volatility
+    increases and decreases.
+    The bands automatically widen when volatility increases and narrow when
+    volatility decreases.
+    This dynamic nature of Bollinger Bands also means they can be used on
+    different securities with the standard settings.
+    For signals, Bollinger Bands can be used to identify M-Tops and W-Bottoms
+    or to determine the strength of the trend.
+    Signals derived from narrowing BandWidth are also important.
+    Bollinger BandWidth is an indicator that derives from Bollinger Bands, and
+    measures the percentage difference between the upper band and the lower
+    band.
+    BandWidth decreases as Bollinger Bands narrow and increases as Bollinger
+    Bands widen.
+    Because Bollinger Bands are based on the standard deviation, falling
+    BandWidth reflects decreasing volatility and rising BandWidth reflects
+    increasing volatility.
+    %B quantifies a security's price relative to the upper and lower Bollinger
+    Band. There are six basic relationship levels:
+    %B equals 1 when price is at the upper band
+    %B equals 0 when price is at the lower band
+    %B is above 1 when price is above the upper band
+    %B is below 0 when price is below the lower band
+    %B is above .50 when price is above the middle band (20-day SMA)
+    %B is below .50 when price is below the middle band (20-day SMA)
+    They were developed by John Bollinger.
+    Bollinger suggests increasing the standard deviation multiplier to 2.1 for
+    a 50-period SMA and decreasing the standard deviation multiplier to 1.9 for
+    a 10-period SMA.
+    http://www.csidata.com/?page_id=797
+    http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:bollinger_bands
+    http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:bollinger_band_width
+    http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:bollinger_band_perce
+    Input:
+      prices ndarray
+      period int > 1 and < len(prices)
+      num_std_dev float > 0.0 (optional and defaults to 2.0)
+    Output:
+      bbs ndarray with upper, middle, lower bands, bandwidth, range and %B
+    Test:
+    >>> import numpy as np
+    >>> import technical_indicators as tai
+    >>> prices = np.array([86.16, 89.09, 88.78, 90.32, 89.07, 91.15, 89.44,
+    ... 89.18, 86.93, 87.68, 86.96, 89.43, 89.32, 88.72, 87.45, 87.26, 89.50,
+    ... 87.90, 89.13, 90.70, 92.90, 92.98, 91.80, 92.66, 92.68, 92.30, 92.77,
+    ... 92.54, 92.95, 93.20, 91.07, 89.83, 89.74, 90.40, 90.74, 88.02, 88.09,
+    ... 88.84, 90.78, 90.54, 91.39, 90.65])
+    >>> period = 20
+    >>> print(tai.bb(prices, period))
+    [[  9.12919107e+01   8.87085000e+01   8.61250893e+01   5.82449423e-02
+        5.16682146e+00   6.75671306e-03]
+     [  9.19497209e+01   8.90455000e+01   8.61412791e+01   6.52300429e-02
+        5.80844179e+00   5.07661263e-01]
+     [  9.26132536e+01   8.92400000e+01   8.58667464e+01   7.55995881e-02
+        6.74650724e+00   4.31816571e-01]
+     [  9.29344497e+01   8.93910000e+01   8.58475503e+01   7.92797873e-02
+        7.08689946e+00   6.31086945e-01]
+     [  9.33114122e+01   8.95080000e+01   8.57045878e+01   8.49848539e-02
+        7.60682430e+00   4.42420124e-01]
+     [  9.37270110e+01   8.96885000e+01   8.56499890e+01   9.00563838e-02
+        8.07702198e+00   6.80945403e-01]
+     [  9.38972812e+01   8.97460000e+01   8.55947188e+01   9.25117832e-02
+        8.30256250e+00   4.63143909e-01]
+     [  9.42636418e+01   8.99125000e+01   8.55613582e+01   9.67861377e-02
+        8.70228361e+00   4.15826692e-01]
+     [  9.45630193e+01   9.00805000e+01   8.55979807e+01   9.95225220e-02
+        8.96503854e+00   1.48579313e-01]
+     [  9.47851634e+01   9.03815000e+01   8.59778366e+01   9.74461225e-02
+        8.80732672e+00   1.93266744e-01]
+     [  9.50411874e+01   9.06575000e+01   8.62738126e+01   9.67087637e-02
+        8.76737475e+00   7.82660026e-02]
+     [  9.49062071e+01   9.08630000e+01   8.68197929e+01   8.89956780e-02
+        8.08641429e+00   3.22789193e-01]
+     [  9.49015375e+01   9.08830000e+01   8.68644625e+01   8.84332063e-02
+        8.03707509e+00   3.05526266e-01]
+     [  9.48939343e+01   9.09040000e+01   8.69140657e+01   8.77834713e-02
+        7.97986867e+00   2.26311285e-01]
+     [  9.48594576e+01   9.09880000e+01   8.71165424e+01   8.50982021e-02
+        7.74291521e+00   4.30661576e-02]
+     [  9.46722663e+01   9.11525000e+01   8.76327337e+01   7.72280810e-02
+        7.03953265e+00  -5.29486389e-02]
+     [  9.45543042e+01   9.11905000e+01   8.78266958e+01   7.37753219e-02
+        6.72760849e+00   2.48722001e-01]
+     [  9.46761721e+01   9.11200000e+01   8.75638279e+01   7.80546993e-02
+        7.11234420e+00   4.72660054e-02]
+     [  9.45733946e+01   9.11670000e+01   8.77606054e+01   7.47286754e-02
+        6.81278915e+00   2.01003516e-01]
+     [  9.45322396e+01   9.12495000e+01   8.79667604e+01   7.19508503e-02
+        6.56547911e+00   4.16304661e-01]
+     [  9.45303313e+01   9.12415000e+01   8.79526687e+01   7.20906879e-02
+        6.57766250e+00   7.52141243e-01]
+     [  9.43672335e+01   9.11660000e+01   8.79647665e+01   7.02286710e-02
+        6.40246702e+00   7.83328285e-01]
+     [  9.41460689e+01   9.10495000e+01   8.79529311e+01   6.80194599e-02
+        6.19313782e+00   6.21182512e-01]]
+    """
+
+    num_prices = len(prices)
+   
+
+    if num_prices < period:
+        # show error message
+        raise SystemExit('Error: num_prices < period')
+
+    bb_range = num_prices - period + 1
+
+    # 3 bands, bandwidth, range and %B
+    bbs = np.zeros((bb_range, 6))
+
+    simple_ma = sma(prices, period)
+
+    for idx in range(bb_range):
+        std_dev = np.std(prices[idx:idx + period])
+
+        # upper, middle, lower bands, bandwidth, range and %B
+        bbs[idx, 0] = simple_ma[idx] + std_dev * num_std_dev
+        bbs[idx, 1] = simple_ma[idx]
+        bbs[idx, 2] = simple_ma[idx] - std_dev * num_std_dev
+        bbs[idx, 3] = (bbs[idx, 0] - bbs[idx, 2]) / bbs[idx, 1]
+        bbs[idx, 4] = bbs[idx, 0] - bbs[idx, 2]
+        bbs[idx, 5] = (prices[idx] - bbs[idx, 2]) / bbs[idx, 4]
+
+    return bbs
+
+
+def roc(prices, period=21):
+    """
+    The Rate-of-Change (ROC) indicator, a.k.a. Momentum, is a pure momentum
+    oscillator that measures the percent change in price from one period to the
+    next.
+    The plot forms an oscillator that fluctuates above and below the zero line
+    as the Rate-of-Change moves from positive to negative.
+    ROC signals include centerline crossovers, divergences and
+    overbought-oversold readings. Identifying overbought or oversold extremes
+    comes natural to the Rate-of-Change oscillator.
+    It can be used to measure the ROC of any data series, such as price or
+    another indicator.
+    Also known as PROC when used with price.
+    ROC = [(Close - Close n periods ago) / (Close n periods ago)] * 100
+    http://www.csidata.com/?page_id=797
+    http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:rate_of_change_roc_a
+    Input:
+      prices ndarray
+      period int > 1 and < len(prices) (optional and defaults to 21)
+    Output:
+      rocs ndarray
+    Test:
+    >>> import numpy as np
+    >>> import technical_indicators as tai
+    >>> prices = np.array([11045.27, 11167.32, 11008.61, 11151.83, 10926.77,
+    ... 10868.12, 10520.32, 10380.43, 10785.14, 10748.26, 10896.91, 10782.95,
+    ... 10620.16, 10625.83, 10510.95, 10444.37, 10068.01, 10193.39, 10066.57,
+    ... 10043.75])
+    >>> print(tai.roc(prices, period=12))
+    [-3.84879682 -4.84888048 -4.52064339 -6.34389154 -7.85923013 -6.20834146
+     -4.31308173 -3.24341092]
+    """
+
+    num_prices = len(prices)
+
+    if num_prices < period:
+        # show error message
+        raise SystemExit('Error: num_prices < period')
+
+    roc_range = num_prices - period
+
+    rocs = np.zeros(roc_range)
+
+    for idx in range(roc_range):
+        rocs[idx] = ((prices[idx + period] - prices[idx]) / prices[idx]) * 100
+
+    return rocs
 
             
             
@@ -384,11 +721,11 @@ print 'data length is', dataLength
 allData = ((ask+ask)/2)
 allData = allData[240:-5]
 avgLineFull = ((ask2+ask2)/2)
-avgLineFull = avgLineFull[:600000]
+avgLineFull = avgLineFull[:200000]
 
 #toWhat = 53500
 toWhat = 300
-threshold = 00015
+threshold = 0.03
 win = 0
 loss = 0
 numTrades = 0
@@ -411,11 +748,37 @@ errorList = []
 #performanceAr = updatedPerformArray
 
 #while toWhat < dataLength:
-for x in xrange(6000):
+bandwidthList = []
+for x in xrange(1500):
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
-    rsiup = tec.rsi(np.array(avgLine[-60:]))
-    rsidown = tec.rsi(np.array(avgLine[-60:]))
+    #avgLine = ((ask2+ask2)/2)
+    #avgLine = avgLine[650000:660000]
+    movingAverage = sma(np.array(avgLine[-patternSize:]), PredictionLag)
+    
+    boilinger = bb(np.array(avgLine[-patternSize:]), patternSize)
+    #print(boilinger)
+
+    momentum = roc(np.array(avgLine[-patternSize:]))
+
+    bandwidth =  boilinger[-1][-3]
+
+    bandwidthList.append(bandwidth)
+  
+    averageBandwidth = np.average(bandwidthList)
+    averageMomentum =  abs(np.average(momentum))
+
+    currentMomentum = momentum[-1]
+
+
+    if averageMomentum < currentMomentum:
+        PredictionLag = 15
+    else:
+        PredictionLag = 30
+
+  
+    rsiup = rsi(np.array(avgLine[-patternSize:]))
+    rsidown = rsi(np.array(avgLine[-patternSize:]))
 
     
     
@@ -439,15 +802,28 @@ for x in xrange(6000):
     #print('our movement is')
     #print(prcChange)
 
-
+    outcomeRange = ask[toWhat-5:toWhat-1]
+    try:
+        avgOutcome = np.average(outcomeRange)
+    except Exception, e:
+        print str(e)
+        avgOutcome = 0
+        #outcomeRange = avgLineFull[y+20:y+30]
+        #currentPoint = avgLineFull[y]
+    currentOutcome = percentChange(ask[toWhat], avgOutcome)
+    print(currentOutcome)
+    print(average)
     
-    if patFound == 1 and average > threshold and rsidown[-1] < 20:
-        if average > 0 and ask[toWhat+PredictionLag] - ask[toWhat] > 0:
+    if   (average > currentOutcome and average != 0 and abs(average) > threshold and rsiup[-1] < 40 and patFound == 1):
+        average = 0
+        patFound = 0
+        if  ask[toWhat+PredictionLag] - ask[toWhat] > 0:
             win = win + 1
             print('trade won !!!')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
+            time.sleep(5);
         else:
             loss = loss + 1
             print(rsidown[-1])
@@ -455,20 +831,25 @@ for x in xrange(6000):
             numTrades = numTrades + 1
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
-    elif patFound == 1 and average < threshold and rsiup[-1] > 80:
-        if average < 0 and ask[toWhat+PredictionLag] - ask[toWhat] < 0:
+            time.sleep(5);
+    elif (average < currentOutcome and average != 0 and abs(average) > threshold and rsidown[-1] > 60 and patFound == 1):
+        patFound = 0
+        average = 0
+        if  ask[toWhat+PredictionLag] - ask[toWhat] < 0:
             win = win + 1
             print('trade won !!!')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
+            time.sleep(5);
         else:
             loss = loss + 1
             print(rsiup[-1])
-            print('trade Lost on down prediction:(')
+            print('trade Lost on fdown prediction:(')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
+            time.sleep(5);
 
             # get the last price, get the future price. find percentage change and compare to predicted
                                      
