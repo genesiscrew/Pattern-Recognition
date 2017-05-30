@@ -15,7 +15,7 @@ import multiprocessing
 totalStart = time.time()
 sys.setrecursionlimit(30000000)
 
-ask = np.loadtxt('option_data135.txt', unpack=True,
+ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
 
@@ -30,7 +30,7 @@ ask2 = np.loadtxt('5Years.txt', unpack=True,
 global patFound
 average = 0
 patternPrice = 0
-PredictionLag = 15
+PredictionLag = 5
 patternSize = 120
 rsiStack = 0
 rsiUp = 0
@@ -57,7 +57,7 @@ def patternStorage():
     look to compare to, and the length of the compared range be changed,
     and even THAT can be machine learned to find the best of all 3 by
     comparing success rates.'''
-    threshold2 = 0.0025
+    threshold2 = 0.0005
     startTime = time.time()
     
     
@@ -104,7 +104,7 @@ def patternStorage():
             patternAr.append(pattern)
             performanceAr.append(futureOutcome)
         
-        y+=20
+        y+=30
 
     endTime = time.time()
    # print len(patternAr)
@@ -379,11 +379,11 @@ def patternRecognition():
         #print('the real movement')
         #print(realMovement)
         #plt.scatter(40, realOutcome, c='#54fff7',s=25)
-        #plt.plot(xp, patForRec, '#54fff7', linewidth = 3)
+       # plt.plot(xp, patForRec, '#54fff7', linewidth = 3)
         #plt.grid(True)
         
         #plt.title('Pattern Recognition.\nCyan line is the current pattern. Other lines are similar patterns from the past.\nPredicted outcomes are color-coded to reflect a positive or negative prediction.\nThe Cyan dot marks where the pattern went.\nOnly data in the past is used to generate patterns and predictions.')
-       # plt.show()
+        #plt.show()
 
 def sma(prices, period):
     """
@@ -664,7 +664,7 @@ def bb(prices, period, num_std_dev=2.0):
     return bbs
 
 
-def roc(prices, period=21):
+def roc(prices, period=10):
     """
     The Rate-of-Change (ROC) indicator, a.k.a. Momentum, is a pure momentum
     oscillator that measures the percent change in price from one period to the
@@ -719,13 +719,13 @@ dataLength = int(ask.shape[0])
 print 'data length is', dataLength
 
 allData = ((ask+ask)/2)
-allData = allData[240:-5]
+allData = allData[200000:-5]
 avgLineFull = ((ask2+ask2)/2)
 avgLineFull = avgLineFull[:200000]
 
 #toWhat = 53500
 toWhat = 300
-threshold = 0.015
+threshold = 0.0
 win = 0
 loss = 0
 numTrades = 0
@@ -753,8 +753,9 @@ bandwidthList = []
 for x in xrange(1500):
     upmomentum = False
     downmomentum = False
-    tradeup = False
+    tradeUp = False
     tradeDown = False
+    Trade = False
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
     #avgLine = ((ask2+ask2)/2)
@@ -771,22 +772,21 @@ for x in xrange(1500):
     bandwidthList.append(bandwidth)
   
     averageBandwidth = np.average(bandwidthList)
-    averageMomentum =  abs(np.average(momentum))
+    averageMomentum = abs(np.average(momentum))
 
     currentMom = momentum[-9:-1]
     currentMomentum = np.amax(currentMom)
     currentMomentumDown = np.amin(currentMom)
+    currentMomentumAverage = np.average(currentMom)
     signUp = np.sign(currentMomentum)
     signDown = np.sign(currentMomentumDown)
-    if signUp == 1:
-        if ((currentMomentum >= 0.02 and currentMomentum < 0.055) or currentMomentumDown <-0.03 or currentMomentum > 0.055) :
-            upmomentum = True
-            print("momentum is saying it will go up")
+    if (signUp == 1 and currentMomentum >= 0.03) :
+        upmomentum = True
+        print("momentum is saying it will go up")
         
-    if signDown == -1:
-        if ((abs(currentMomentumDown) >= 0.02 and abs(currentMomentumDown) < 0.055) or currentMomentum > 0.03 or abs(currentMomentumDown) > 0.055) :
-            downmomentum = True
-            print("momentum is saying it will go down")
+    if (signDown == -1 and abs(currentMomentumDown) >= 0.03)  :
+        downmomentum = True
+        print("momentum is saying it will go down")
         
     if averageMomentum < currentMomentum:
         PredictionLag = 15
@@ -797,13 +797,23 @@ for x in xrange(1500):
     rsiup = rsi(np.array(avgLine[-patternSize:]))
     rsidown = rsi(np.array(avgLine[-patternSize:]))
 
-    
     if upmomentum == True and downmomentum == True:
-        if averageMomentum  > 0:
-            tradeUp = True
-        elif averageMomentum < 0:
-            tradeDown = True
+        if np.sign(currentMomentum) == np.sign(currentMomentumDown):
+            if np.sign(currentMomentum) == 1 and averageMomentum > 0:
+                tradeUp = True
+            elif np.sign(currentMomentum) == -1 and averageMomentum > 0:
+                tradeDown = True
+            else:
+                tradeUp = False
+                tradeDown = False
+    else:
+        tradeUp = True
+        tradeDown = True
 
+     
+
+        
+        
     
 
     #avgOutcome = reduce(lambda x, y: x + y, outcomeRange) / len(outcomeRange)
@@ -835,12 +845,13 @@ for x in xrange(1500):
    # print(currentOutcome)
     print(currentMomentum)
     print(currentMomentumDown)
+    print(bandwidth)
     
-    if   ((average > currentOutcome and average != 0 and abs(average) > threshold and (upmomentum == True and tradeUp == True) and patFound == 1) or (abs(average) > threshold and upmomentum == True and tradeUp == True and currentMomentum > 0.06)):
+    if   (upmomentum == True and tradeUp == True and patFound == 1 and np.sign(average) == 1 and abs(average) > threshold) and bandwidth > 0.0009:
         average = 0
         patFound = 0
         upmomentum = False
-        if  ask[toWhat+PredictionLag-10] - ask[toWhat] > 0:
+        if  ask[toWhat+PredictionLag-4] - ask[toWhat] > 0:
             win = win + 1
             print('trade won on up !!!')
             numTrades = numTrades + 1
@@ -855,11 +866,11 @@ for x in xrange(1500):
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
             time.sleep(1);
-    elif (average < currentOutcome and average != 0 and abs(average) > threshold and (downmomentum == True and upmomentum == False) and patFound == 1 or (abs(average) > threshold and downmomentum == True and tradeDown == True and abs(currentMomentumDown) > 0.06)):
+    elif downmomentum == True and tradeDown == True and patFound == 1  and  np.sign(average) == -1 and abs(average) > threshold and bandwidth > 0.0009:
         patFound = 0
         average = 0
         downmomentum = False
-        if  ask[toWhat+PredictionLag-10] - ask[toWhat] < 0:
+        if  ask[toWhat+PredictionLag-4] - ask[toWhat] < 0:
             win = win + 1
             print('trade won on down!!!')
             numTrades = numTrades + 1
