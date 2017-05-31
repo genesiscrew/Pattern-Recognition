@@ -111,6 +111,67 @@ def patternStorage():
    # print len(performanceAr)
     print 'Pattern storing took:', endTime-startTime
 
+def addPattern(newPattern,  outcomeRange):
+    '''
+    The goal of patternFinder is to begin collection of %chang e patterns
+    in the tick data. From there, we also collect the short-term outcome
+    of this pattern. Later on, the length of the pattern, how far out we
+    look to compare to, and the length of the compared range be changed,
+    and even THAT can be machine learned to find the best of all 3 by
+    comparing success rates.'''
+    threshold2 = 0.0005
+    startTime = time.time()
+    
+    
+    #x = len(avgLine)-30
+    x = len(avgLineFull)-patternSize
+    y = patternSize + 1
+    currentStance = 'none'
+   
+  
+    pattern = []
+    for i in xrange(len(newPattern)):
+        p1 = percentChange(newPattern[0], newPattern[patternSize-i-1])
+        pattern.append(p1)
+
+            
+    startPoint = patternSize-1
+    #outcomeRange = futureOutcome
+    try:
+        avgOutcome = reduce(lambda x, y: x + y, outcomeRange) / len(outcomeRange)
+    except Exception, e:
+        print str(e)
+        avgOutcome = 0
+    #outcomeRange = avgLineFull[y+20:y+30]
+    #currentPoint = avgLineFull[y]
+    
+    currentPoint = newPattern[startPoint]
+
+
+
+    futureOutcome = percentChange(currentPoint, avgOutcome)
+    #futureOutcome = avgOutcome-currentPoint
+    #futureOutcome = float(avgLineFull[y+PredictionLag])-currentPoint 
+
+    '''
+    print 'where we are historically:',currentPoint
+    print 'soft outcome of the horizon:',avgOutcome
+    print 'This pattern brings a future change of:',futureOutcome
+    print '_______'
+    print p1, p2, p3, p4, p5, p6, p7, p8, p9, p10
+    '''
+    if ( abs(futureOutcome) > threshold2):
+   
+
+        patternAr.append(pattern)
+        performanceAr.append(futureOutcome)
+    
+    
+
+    endTime = time.time()
+   # print len(patternAr)
+   # print len(performanceAr)
+   # print 'Pattern storing took:', endTime-startTime
 
 def patternOptimizer(patternArray, performArray):
    # global d
@@ -717,16 +778,17 @@ def roc(prices, period=10):
 
 dataLength = int(ask.shape[0])
 print 'data length is', dataLength
-
+startingPoint = 570000
 allData = ((ask+ask)/2)
-allData = allData[200000:-5]
+allData = allData[startingPoint :-5]
 avgLineFull = ((ask2+ask2)/2)
-avgLineFull = avgLineFull[:200000]
-
+avgLineFull = avgLineFull[:startingPoint ]
+fullData = ((ask2+ask2)/2)
 #toWhat = 53500
 toWhat = 300
 threshold = 0.0
 win = 0
+counter = 0
 loss = 0
 numTrades = 0
 patternAr = []
@@ -735,6 +797,9 @@ global patForRec
 updatedPerformArray = []
 optimalPatterns = []
 patternStorage()
+pastWinStatus = 0
+goUp = True
+goDown = True
 
 print('optimization complete')
 print('size of original pattern array')
@@ -750,16 +815,30 @@ errorList = []
 
 #while toWhat < dataLength:
 bandwidthList = []
-for x in xrange(1500):
+for x in xrange(5000):
+    
     upmomentum = False
     downmomentum = False
     tradeUp = False
     tradeDown = False
     Trade = False
+    newPattern = []
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
     #avgLine = ((ask2+ask2)/2)
+    counter = patternSize+PredictionLag+5
     #avgLine = avgLine[650000:660000]
+    start = startingPoint +x-counter
+    end = startingPoint +x-PredictionLag-5
+    start2 = startingPoint +x-PredictionLag-5
+    end2 = startingPoint+x
+    newPattern = fullData[start:end]
+    futureOutcome = [fullData[start2:end2]]
+    addPattern(newPattern, futureOutcome)
+    
+        
+    
+    
     movingAverage = sma(np.array(avgLine[-patternSize:]), PredictionLag)
     
     boilinger = bb(np.array(avgLine[-patternSize:]), patternSize)
@@ -811,7 +890,16 @@ for x in xrange(1500):
         tradeDown = True
 
      
-
+    if(pastWinStatus == -1):
+        if pastMovement == 1:
+            goDown = True
+            goUp = False
+        elif pastMovement == -1:
+            goUp = True
+            goDown = False
+       
+    if bandwidth < 0.0009 or (upmomentum == False and tradeUp == False) or (downmomentum == False and tradeDown == False):
+        pastWinStatus = 1
         
         
     
@@ -846,8 +934,9 @@ for x in xrange(1500):
     print(currentMomentum)
     print(currentMomentumDown)
     print(bandwidth)
+    print(averageBandwidth)
     
-    if   (upmomentum == True and tradeUp == True and patFound == 1 and np.sign(average) == 1 and abs(average) > threshold) and bandwidth > 0.0009:
+    if   (upmomentum == True and tradeUp == True  and bandwidth >= 0.0009) or goUp == True:
         average = 0
         patFound = 0
         upmomentum = False
@@ -860,13 +949,15 @@ for x in xrange(1500):
             time.sleep(1);
         else:
             loss = loss + 1
+            pastWinStatus = -1
+            pastMovement = 1
             print(rsidown[-1])
             print('trade Lost on up prediction:(')
             numTrades = numTrades + 1
             error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
             errorList.append(error)
             time.sleep(1);
-    elif downmomentum == True and tradeDown == True and patFound == 1  and  np.sign(average) == -1 and abs(average) > threshold and bandwidth > 0.0009:
+    elif (downmomentum == True and tradeDown == True and bandwidth >= 0.0009) or goDown == True:
         patFound = 0
         average = 0
         downmomentum = False
@@ -878,6 +969,8 @@ for x in xrange(1500):
             errorList.append(error)
             time.sleep(1);
         else:
+            pastMovement = -1
+            pastWinStatus = -1
             loss = loss + 1
             print(rsiup[-1])
             print('trade Lost on fdown prediction:(')
@@ -889,7 +982,10 @@ for x in xrange(1500):
             # get the last price, get the future price. find percentage change and compare to predicted
                                      
    
-    
+    print("wins is")
+    print(win)
+    print("trades is")
+    print(numTrades)
     totalEnd = time.time()-totalStart
     print 'Entire processing took:',totalEnd,'seconds'
     toWhat += 1
