@@ -922,6 +922,7 @@ for x in xrange(4500):
 ##    plt.title('filtered signal')
 ##    plt.show()
     
+    mean_value = np.mean(filtered_sine)
     max_value = np.amax(filtered_sine)*0.5
     min_value = np.amin(filtered_sine)*0.5
     down_values = filtered_sine[np.where(filtered_sine < min_value)]
@@ -1037,9 +1038,8 @@ for x in xrange(4500):
    # time.sleep(5);
     #
     #(downmomentum == True and tradeDown == True and goDown == True and bandwidth >= 0.0012) or
- 
     
-    if  (filtered_sine[-1] <= min_value  or (filtered_sine[-1] >= max_value and up_range>down_range and range_diff > 0.5) ):
+    if  ((filtered_sine[-1] <= min_value and range_diff < 0.1)  or (filtered_sine[-1] >= max_value and up_range>down_range and range_diff > 0.1) ):
       
 
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
@@ -1088,7 +1088,7 @@ for x in xrange(4500):
             plt.show()
             time.sleep(5);
             
-    elif (filtered_sine[-1] >= max_value or ( filtered_sine[-1] <= min_value and down_range>up_range and range_diff > 0.5) ):
+    elif ((filtered_sine[-1] >= max_value and range_diff < 0.1) or ( filtered_sine[-1] <= min_value and down_range>up_range and range_diff > 0.1) ):
      
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
