@@ -18,7 +18,7 @@ import pandas as pd
 totalStart = time.time()
 sys.setrecursionlimit(30000000)
 
-ask = np.loadtxt('option_data345.txt', unpack=True,
+ask = np.loadtxt('option_data135.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
 
@@ -938,11 +938,17 @@ for x in xrange(4500):
         down_range = down_rangemax-down_rangemin
         print('up range is', up_range)
         print('down range', down_range)
-        range_diff = abs(up_range-down_range)
+        range_diff = up_range-down_range
         print('range difference is', range_diff)
     
-
-    
+    min_fish = 1
+    max_fish = 5
+    fish_value = 100*(abs(filtered_sine[-1])-min_fish)/(max_fish-min_fish)
+    min_trend = 0
+    max_trend = 0.7
+    trend_value = 100*((abs(range_diff)-min_trend)/(max_trend-min_trend))
+    print('fisher value is', fish_value)
+    print('trend value is', trend_value)
     boilinger = bb(np.array(myData[(toWhat-patternSize):toWhat]), 7)
    # print('fucking length ' , myData[(startingPoint-patternSize):startingPoint])
     
@@ -1039,9 +1045,9 @@ for x in xrange(4500):
     #
     #(downmomentum == True and tradeDown == True and goDown == True and bandwidth >= 0.0012) or
     
-    if  ((filtered_sine[-1] <= min_value and range_diff < 0.1)  or (filtered_sine[-1] >= max_value and up_range>down_range and range_diff > 0.1) ):
+   # if  ((filtered_sine[-1] <= -1 and range_diff < 0.1)  or (filtered_sine[-1] >= 1 and up_range>down_range and range_diff > 0.1) ):
       
-
+    if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 1)) and abs(trend_value-fish_value) > 20 :
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
@@ -1088,8 +1094,8 @@ for x in xrange(4500):
             plt.show()
             time.sleep(5);
             
-    elif ((filtered_sine[-1] >= max_value and range_diff < 0.1) or ( filtered_sine[-1] <= min_value and down_range>up_range and range_diff > 0.1) ):
-     
+   # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
+    elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -1)) and abs(trend_value-fish_value) > 20:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
