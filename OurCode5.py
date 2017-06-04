@@ -9,13 +9,16 @@ import time
 import sys
 import itertools
 import multiprocessing
+from scipy import signal
+import pandas as pd
+
 
 
 
 totalStart = time.time()
 sys.setrecursionlimit(30000000)
 
-ask = np.loadtxt('5Years.txt', unpack=True,
+ask = np.loadtxt('option_data345.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
 
@@ -31,10 +34,33 @@ global patFound
 average = 0
 patternPrice = 0
 PredictionLag = 5
-patternSize = 120
+patternSize = 60
 rsiStack = 0
 rsiUp = 0
 rsiDown = 0
+
+
+def sine_generator(fs, sinefreq, duration):
+    T = duration
+    nsamples = fs * T
+    w = 2. * np.pi * sinefreq
+    t_sine = np.linspace(0, T, nsamples, endpoint=False)
+    y_sine = np.sin(w * t_sine)
+    result = pd.DataFrame({ 
+        'data' : y_sine} ,index=t_sine)
+    return result
+
+def butter_highpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+    return b, a
+
+def butter_highpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_highpass(cutoff, fs, order=order)
+    y = signal.filtfilt(b, a, data)
+    return y
+
 
 
 
@@ -57,7 +83,7 @@ def patternStorage():
     look to compare to, and the length of the compared range be changed,
     and even THAT can be machine learned to find the best of all 3 by
     comparing success rates.'''
-    threshold2 = 0.0005
+    threshold2 = 0.000
     startTime = time.time()
     
     
@@ -182,7 +208,7 @@ def patternOptimizer(patternArray, performArray):
     counter = 0
     d = {}
     matches = []
-    matchThreshhold  = 0.0003
+    matchThreshhold  = 0.000
     targetMatchCount = 200
     global indexCurrent
     global originLength
@@ -476,7 +502,7 @@ def sma(prices, period):
       23.076  23.21   23.377  23.525  23.652  23.71   23.684  23.612  23.505
       23.432  23.277  23.131]
     """
-    period = PredictionLag
+   # period = PredictionLag
     num_prices = len(prices)
 
     if num_prices < period:
@@ -773,22 +799,36 @@ def roc(prices, period=10):
 
     return rocs
 
+fps = 500
+sine_fq = 10 #Hz
+duration = 10 #seconds
+sine_5Hz = sine_generator(fps,sine_fq,duration)
+sine_fq = 1 #Hz
+duration = 10 #seconds
+sine_1Hz = sine_generator(fps,sine_fq,duration)
+
+sine = sine_5Hz + sine_1Hz
+
+
+
+#ddddddddddddddddddd
+
             
             
 
 dataLength = int(ask.shape[0])
 print 'data length is', dataLength
-startingPoint = 570000
+startingPoint = 1000
 allData = ((ask+ask)/2)
+myData = ((ask+ask)/2)
 allData = allData[startingPoint :-5]
 avgLineFull = ((ask2+ask2)/2)
-avgLineFull = avgLineFull[:startingPoint ]
+avgLineFull = avgLineFull[:startingPoint]
 fullData = ((ask2+ask2)/2)
 #toWhat = 53500
-toWhat = 300
-threshold = 0.0
+toWhat = startingPoint
+threshold = 0.015
 win = 0
-counter = 0
 loss = 0
 numTrades = 0
 patternAr = []
@@ -798,8 +838,28 @@ updatedPerformArray = []
 optimalPatterns = []
 patternStorage()
 pastWinStatus = 0
-goUp = True
-goDown = True
+maxLossCounter = 0
+goUp = False
+goDown = False
+direction = 0
+continueUp = False
+continueDown = False
+counter4 = 0
+
+filtered_sine = butter_highpass_filter(allData,20,fps)
+for i in range(len(filtered_sine)):
+    filtered_sine[i] = 0.5 * np.log((1+filtered_sine[i])/(1-filtered_sine[i]))
+
+plt.figure(figsize=(20,10))
+plt.subplot(211)
+plt.plot(range(len(filtered_sine)),filtered_sine)
+plt.title('generated signal')
+plt.subplot(212)
+norm_data = np.histogram(filtered_sine, bins=10, density=True)
+plt.hist(filtered_sine,500)
+plt.title('filtered signal')
+plt.show()
+
 
 print('optimization complete')
 print('size of original pattern array')
@@ -815,17 +875,21 @@ errorList = []
 
 #while toWhat < dataLength:
 bandwidthList = []
-for x in xrange(5000):
+totalLossCounter=0
+maxLossCounter=0
+for x in xrange(4500):
     
     upmomentum = False
     downmomentum = False
     tradeUp = False
     tradeDown = False
     Trade = False
+  
     newPattern = []
     avgLine = ((ask+ask)/2)
     avgLine = avgLine[:toWhat]
     #avgLine = ((ask2+ask2)/2)
+    myData = ((ask+ask)/2)
     counter = patternSize+PredictionLag+5
     #avgLine = avgLine[650000:660000]
     start = startingPoint +x-counter
@@ -834,73 +898,110 @@ for x in xrange(5000):
     end2 = startingPoint+x
     newPattern = fullData[start:end]
     futureOutcome = [fullData[start2:end2]]
-    addPattern(newPattern, futureOutcome)
+    #addPattern(newPattern, futureOutcome)
+    print("size of norm is", len(allData))
+   
+    print('complete')
+    input_Data = myData[counter4:toWhat]
+    counter4 = counter4+1
     
-        
-    
-    
-    movingAverage = sma(np.array(avgLine[-patternSize:]), PredictionLag)
-    
-    boilinger = bb(np.array(avgLine[-patternSize:]), patternSize)
-    #print(boilinger)
+    #med = np.median(norm)
+    filtered_sine = butter_highpass_filter(input_Data,20,fps)
+    filtered_sine = [i/sum(filtered_sine) for i in filtered_sine]
+    for i in range(len(filtered_sine)):
+        filtered_sine[i] = 0.5 * np.log((1+filtered_sine[i])/(1-filtered_sine[i]))
 
-    momentum = roc(np.array(avgLine[-patternSize:]))
+    filtered_sine = np.nan_to_num(filtered_sine)
+##    plt.figure(figsize=(20,10))
+##    plt.subplot(211)
+##    plt.plot(range(len( input_Data)), input_Data)
+##    plt.title('generated signal')
+##    plt.subplot(212)
+##   # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##    plt.hist(filtered_sine,10)
+##    plt.title('filtered signal')
+##    plt.show()
+    
+    max_value = np.amax(filtered_sine)*0.5
+    min_value = np.amin(filtered_sine)*0.5
+    down_values = filtered_sine[np.where(filtered_sine < min_value)]
+    up_values = filtered_sine[np.where(filtered_sine > max_value)]
+    if len(up_values) != 0 and len(down_values) != 0:      
+        print('length of up is', len(up_values))
+        print('length of down is', len(down_values))
+        up_rangemax = np.amax(up_values)
+        up_rangemin = np.amin(up_values)
+        down_rangemax = np.amax(down_values)
+        down_rangemin = np.amin(down_values)
+        up_range = up_rangemax-up_rangemin
+        down_range = down_rangemax-down_rangemin
+        print('up range is', up_range)
+        print('down range', down_range)
+        range_diff = abs(up_range-down_range)
+        print('range difference is', range_diff)
+    
 
-    bandwidth =  boilinger[-1][-3]
+    
+    boilinger = bb(np.array(myData[(toWhat-patternSize):toWhat]), 7)
+   # print('fucking length ' , myData[(startingPoint-patternSize):startingPoint])
+    
+ 
+    momentum = roc(np.array(myData[(toWhat-patternSize):toWhat]))
 
-    bandwidthList.append(bandwidth)
+    bandwidth =  [ x[-3] for x in boilinger]
+    percentBand = boilinger[-1, 5]
+    averageB = np.average(bandwidth)
+    #print(percentBand)
+    #print(averageB)
+    #print(boilinger[-1][-3])
+   # bandwidthList.append(bandwidth)
+    baby = boilinger[-3][-1]
   
     averageBandwidth = np.average(bandwidthList)
     averageMomentum = abs(np.average(momentum))
 
     currentMom = momentum[-9:-1]
+    currentMomo = momentum[-1]
     currentMomentum = np.amax(currentMom)
     currentMomentumDown = np.amin(currentMom)
     currentMomentumAverage = np.average(currentMom)
     signUp = np.sign(currentMomentum)
     signDown = np.sign(currentMomentumDown)
-    if (signUp == 1 and currentMomentum >= 0.03) :
+    if (signUp == 1 and currentMomentum >= 0.01) :
         upmomentum = True
         print("momentum is saying it will go up")
         
-    if (signDown == -1 and abs(currentMomentumDown) >= 0.03)  :
+    if (signDown == -1 and abs(currentMomentumDown) >= 0.01)  :
         downmomentum = True
         print("momentum is saying it will go down")
         
     if averageMomentum < currentMomentum:
-        PredictionLag = 15
+        PredictionLag = 1
     else:
-        PredictionLag = 30
+        PredictionLag = 1
 
+ 
   
-    rsiup = rsi(np.array(avgLine[-patternSize:]))
-    rsidown = rsi(np.array(avgLine[-patternSize:]))
 
-    if upmomentum == True and downmomentum == True:
-        if np.sign(currentMomentum) == np.sign(currentMomentumDown):
-            if np.sign(currentMomentum) == 1 and averageMomentum > 0:
-                tradeUp = True
-            elif np.sign(currentMomentum) == -1 and averageMomentum > 0:
-                tradeDown = True
-            else:
-                tradeUp = False
-                tradeDown = False
-    else:
-        tradeUp = True
-        tradeDown = True
 
+    if np.sign(currentMomentum) == np.sign(currentMomentumDown):
+        if np.sign(currentMomentum) == 1 and currentMomentum > 0.04 and abs(currentMomentumDown) > 0.04 and currentMomentumAverage > 0  :
+            tradeUp = True
+            tradeDown = False
      
-    if(pastWinStatus == -1):
-        if pastMovement == 1:
-            goDown = True
-            goUp = False
-        elif pastMovement == -1:
+        elif np.sign(currentMomentum) == -1 and abs(currentMomentum) > 0.04 and abs(currentMomentumDown) > 0.04 and currentMomentumAverage < 0 :
+            tradeDown = True
+            tradeUp = False
+    
+    else:
+        if currentMomentum > abs(currentMomentumDown):
             goUp = True
             goDown = False
-       
-    if bandwidth < 0.0009 or (upmomentum == False and tradeUp == False) or (downmomentum == False and tradeDown == False):
-        pastWinStatus = 1
-        
+        else:
+            goDown = True
+            goUp = False
+
+
         
     
 
@@ -908,8 +1009,8 @@ for x in xrange(5000):
     
     
   
-    patForRec = currentPattern()
-    patternRecognition()
+    #patForRec = currentPattern()
+    #patternRecognition()
     #print('pattern actual price')
     #print(patternPrice)
     #print('runnign to what')x
@@ -917,9 +1018,8 @@ for x in xrange(5000):
     #lastPrice = ask[toWhat]
     #futurePrice = ask[toWhat+30]
     #prcChange = percentChange(lastPrice,futurePrice)
-
-    #print('our movement is')
-    #print(prcChange)
+    print('current price' , filtered_sine[-1])
+   
 
     outcomeRange = ask[toWhat-5:toWhat-1]
     try:
@@ -930,62 +1030,122 @@ for x in xrange(5000):
         #outcomeRange = avgLineFull[y+20:y+30]
         #currentPoint = avgLineFull[y]
     currentOutcome = percentChange(ask[toWhat], avgOutcome)
-   # print(currentOutcome)
-    print(currentMomentum)
-    print(currentMomentumDown)
-    print(bandwidth)
-    print(averageBandwidth)
+  
     
-    if   (upmomentum == True and tradeUp == True  and bandwidth >= 0.0009) or goUp == True:
-        average = 0
-        patFound = 0
-        upmomentum = False
-        if  ask[toWhat+PredictionLag-4] - ask[toWhat] > 0:
+  
+
+   # time.sleep(5);
+    #
+    #(downmomentum == True and tradeDown == True and goDown == True and bandwidth >= 0.0012) or
+ 
+    
+    if  (filtered_sine[-1] <= min_value  or (filtered_sine[-1] >= max_value and up_range>down_range and range_diff > 0.5) ):
+      
+
+        if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
+            pastWinStatus = 0
             print('trade won on up !!!')
             numTrades = numTrades + 1
-            error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
+            error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            time.sleep(1);
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
+            if maxLossCounter>totalLossCounter :
+               totalLossCounter=maxLossCounter
+               maxLossCounter=0;
+            else:
+               totalLossCounter=totalLossCounter
+               maxLossCounter=0;
+            
+             
         else:
             loss = loss + 1
+            direction = -1
             pastWinStatus = -1
-            pastMovement = 1
-            print(rsidown[-1])
+            
             print('trade Lost on up prediction:(')
             numTrades = numTrades + 1
-            error = abs(ask[toWhat + PredictionLag] - ask[toWhat] - average)
+            error = abs(allData[toWhat + PredictionLag] - allData[toWhat] - average)
             errorList.append(error)
-            time.sleep(1);
-    elif (downmomentum == True and tradeDown == True and bandwidth >= 0.0009) or goDown == True:
-        patFound = 0
-        average = 0
-        downmomentum = False
-        if  ask[toWhat+PredictionLag-4] - ask[toWhat] < 0:
+            maxLossCounter = maxLossCounter+1
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
+            
+    elif (filtered_sine[-1] >= max_value or ( filtered_sine[-1] <= min_value and down_range>up_range and range_diff > 0.5) ):
+     
+        if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
+            pastWinStatus = 0
             print('trade won on down!!!')
             numTrades = numTrades + 1
-            error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
+            error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            time.sleep(1);
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
+            if maxLossCounter>totalLossCounter :
+               totalLossCounter=maxLossCounter
+               maxLossCounter=0;
+            else:
+               totalLossCounter=totalLossCounter
+               maxLossCounter=0;
         else:
-            pastMovement = -1
+            direction = 1
+            
             pastWinStatus = -1
             loss = loss + 1
-            print(rsiup[-1])
             print('trade Lost on fdown prediction:(')
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
-            time.sleep(1);
+            maxLossCounter = maxLossCounter+1
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
+            maxLossCounter = maxLossCounter+1
 
             # get the last price, get the future price. find percentage change and compare to predicted
                                      
-   
+    else:
+         pastMovement = 0
+         pastWinStatus = 0
     print("wins is")
     print(win)
+    print((win*0.71*20)-(loss*20))
     print("trades is")
     print(numTrades)
+    print("TotalContineusLoss",totalLossCounter)
     totalEnd = time.time()-totalStart
     print 'Entire processing took:',totalEnd,'seconds'
     toWhat += 1
