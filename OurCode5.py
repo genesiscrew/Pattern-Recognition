@@ -18,9 +18,10 @@ import pandas as pd
 totalStart = time.time()
 sys.setrecursionlimit(30000000)
 
-ask = np.loadtxt('option_data135.txt', unpack=True,
+ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
+ask = ask[100000:150000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -818,7 +819,8 @@ sine = sine_5Hz + sine_1Hz
 
 dataLength = int(ask.shape[0])
 print 'data length is', dataLength
-startingPoint = 1000
+startingPoint = 500
+
 allData = ((ask+ask)/2)
 myData = ((ask+ask)/2)
 allData = allData[startingPoint :-5]
@@ -877,7 +879,7 @@ errorList = []
 bandwidthList = []
 totalLossCounter=0
 maxLossCounter=0
-for x in xrange(4500):
+for x in xrange(40500):
     
     upmomentum = False
     downmomentum = False
@@ -932,6 +934,7 @@ for x in xrange(4500):
         print('length of down is', len(down_values))
         len_down = len(down_values)
         len_up = len(up_values)
+        len_diff = abs(len(down_values)-len(up_values))
         up_rangemax = np.amax(up_values)
         up_rangemin = np.amin(up_values)
         down_rangemax = np.amax(down_values)
@@ -951,64 +954,64 @@ for x in xrange(4500):
     trend_value = 100*((abs(range_diff)-min_trend)/(max_trend-min_trend))
     print('fisher value is', fish_value)
     print('trend value is', trend_value)
-    boilinger = bb(np.array(myData[(toWhat-patternSize):toWhat]), 7)
-   # print('fucking length ' , myData[(startingPoint-patternSize):startingPoint])
-    
+##    boilinger = bb(np.array(myData[(toWhat-patternSize):toWhat]), 7)
+##   # print('fucking length ' , myData[(startingPoint-patternSize):startingPoint])
+##    
+## 
+##    momentum = roc(np.array(myData[(toWhat-patternSize):toWhat]))
+##
+##    bandwidth =  [ x[-3] for x in boilinger]
+##    percentBand = boilinger[-1, 5]
+##    averageB = np.average(bandwidth)
+##    #print(percentBand)
+##    #print(averageB)
+##    #print(boilinger[-1][-3])
+##   # bandwidthList.append(bandwidth)
+##    baby = boilinger[-3][-1]
+##  
+##    averageBandwidth = np.average(bandwidthList)
+##    averageMomentum = abs(np.average(momentum))
+##
+##    currentMom = momentum[-9:-1]
+##    currentMomo = momentum[-1]
+##    currentMomentum = np.amax(currentMom)
+##    currentMomentumDown = np.amin(currentMom)
+##    currentMomentumAverage = np.average(currentMom)
+##    signUp = np.sign(currentMomentum)
+##    signDown = np.sign(currentMomentumDown)
+##    if (signUp == 1 and currentMomentum >= 0.01) :
+##        upmomentum = True
+##        print("momentum is saying it will go up")
+##        
+##    if (signDown == -1 and abs(currentMomentumDown) >= 0.01)  :
+##        downmomentum = True
+##        print("momentum is saying it will go down")
+##        
+##    if averageMomentum < currentMomentum:
+##        PredictionLag = 1
+##    else:
+##        PredictionLag = 1
+
  
-    momentum = roc(np.array(myData[(toWhat-patternSize):toWhat]))
-
-    bandwidth =  [ x[-3] for x in boilinger]
-    percentBand = boilinger[-1, 5]
-    averageB = np.average(bandwidth)
-    #print(percentBand)
-    #print(averageB)
-    #print(boilinger[-1][-3])
-   # bandwidthList.append(bandwidth)
-    baby = boilinger[-3][-1]
-  
-    averageBandwidth = np.average(bandwidthList)
-    averageMomentum = abs(np.average(momentum))
-
-    currentMom = momentum[-9:-1]
-    currentMomo = momentum[-1]
-    currentMomentum = np.amax(currentMom)
-    currentMomentumDown = np.amin(currentMom)
-    currentMomentumAverage = np.average(currentMom)
-    signUp = np.sign(currentMomentum)
-    signDown = np.sign(currentMomentumDown)
-    if (signUp == 1 and currentMomentum >= 0.01) :
-        upmomentum = True
-        print("momentum is saying it will go up")
-        
-    if (signDown == -1 and abs(currentMomentumDown) >= 0.01)  :
-        downmomentum = True
-        print("momentum is saying it will go down")
-        
-    if averageMomentum < currentMomentum:
-        PredictionLag = 1
-    else:
-        PredictionLag = 1
-
- 
   
 
 
-    if np.sign(currentMomentum) == np.sign(currentMomentumDown):
-        if np.sign(currentMomentum) == 1 and currentMomentum > 0.04 and abs(currentMomentumDown) > 0.04 and currentMomentumAverage > 0  :
-            tradeUp = True
-            tradeDown = False
-     
-        elif np.sign(currentMomentum) == -1 and abs(currentMomentum) > 0.04 and abs(currentMomentumDown) > 0.04 and currentMomentumAverage < 0 :
-            tradeDown = True
-            tradeUp = False
-    
-    else:
-        if currentMomentum > abs(currentMomentumDown):
-            goUp = True
-            goDown = False
-        else:
-            goDown = True
-            goUp = False
+##    if np.sign(currentMomentum) == np.sign(currentMomentumDown):
+##        if np.sign(currentMomentum) == 1 and currentMomentum > 0.04 and abs(currentMomentumDown) > 0.04 and currentMomentumAverage > 0  :
+##            tradeUp = True
+##            tradeDown = False
+##     
+##        elif np.sign(currentMomentum) == -1 and abs(currentMomentum) > 0.04 and abs(currentMomentumDown) > 0.04 and currentMomentumAverage < 0 :
+##            tradeDown = True
+##            tradeUp = False
+##    
+##    else:
+##        if currentMomentum > abs(currentMomentumDown):
+##            goUp = True
+##            goDown = False
+##        else:
+##            goDown = True
+##            goUp = False
 
 
         
@@ -1030,15 +1033,15 @@ for x in xrange(4500):
     print('current price' , filtered_sine[-1])
    
 
-    outcomeRange = ask[toWhat-5:toWhat-1]
-    try:
-        avgOutcome = np.average(outcomeRange)
-    except Exception, e:
-        print str(e)
-        avgOutcome = 0
+    #outcomeRange = ask[toWhat-5:toWhat-1]
+    #try:
+     #   avgOutcome = np.average(outcomeRange)
+    #except Exception, e:
+     #   print str(e)
+      #  avgOutcome = 0
         #outcomeRange = avgLineFull[y+20:y+30]
         #currentPoint = avgLineFull[y]
-    currentOutcome = percentChange(ask[toWhat], avgOutcome)
+    #currentOutcome = percentChange(ask[toWhat], avgOutcome)
   
     
   
@@ -1049,7 +1052,8 @@ for x in xrange(4500):
     
    # if  ((filtered_sine[-1] <= -1 and range_diff < 0.1)  or (filtered_sine[-1] >= 1 and up_range>down_range and range_diff > 0.1) ):
       
-    if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 1 and up_range>down_range and len_up>len_down and range_diff > 0.1)) and abs(trend_value-fish_value) > 20 :
+    #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
+    if  (filtered_sine[-1] > 0.8 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
@@ -1097,7 +1101,8 @@ for x in xrange(4500):
             time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
-    elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -1 and up_range<down_range and len_down>len_up and range_diff > 0.1)) and abs(trend_value-fish_value) > 20:
+    #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
+    elif (filtered_sine[-1] < -0.8 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
@@ -1150,7 +1155,7 @@ for x in xrange(4500):
          pastWinStatus = 0
     print("wins is")
     print(win)
-    print((win*0.71*20)-(loss*20))
+    print((win*0.71*600)-(loss*600))
     print("trades is")
     print(numTrades)
     print("TotalContineusLoss",totalLossCounter)
