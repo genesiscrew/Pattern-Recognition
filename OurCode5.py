@@ -30,7 +30,7 @@ ask2 = np.loadtxt('5Years.txt', unpack=True,
 
 
 
-global patFound
+#global patFound
 average = 0
 patternPrice = 0
 PredictionLag = 5
@@ -836,7 +836,7 @@ performanceAr = []
 global patForRec
 updatedPerformArray = []
 optimalPatterns = []
-patternStorage()
+#patternStorage()
 pastWinStatus = 0
 maxLossCounter = 0
 goUp = False
@@ -930,6 +930,8 @@ for x in xrange(4500):
     if len(up_values) != 0 and len(down_values) != 0:      
         print('length of up is', len(up_values))
         print('length of down is', len(down_values))
+        len_down = len(down_values)
+        len_up = len(up_values)
         up_rangemax = np.amax(up_values)
         up_rangemin = np.amin(up_values)
         down_rangemax = np.amax(down_values)
@@ -1047,7 +1049,7 @@ for x in xrange(4500):
     
    # if  ((filtered_sine[-1] <= -1 and range_diff < 0.1)  or (filtered_sine[-1] >= 1 and up_range>down_range and range_diff > 0.1) ):
       
-    if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 1)) and abs(trend_value-fish_value) > 20 :
+    if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 1 and up_range>down_range and len_up>len_down and range_diff > 0.1)) and abs(trend_value-fish_value) > 20 :
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
@@ -1095,7 +1097,7 @@ for x in xrange(4500):
             time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
-    elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -1)) and abs(trend_value-fish_value) > 20:
+    elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -1 and up_range<down_range and len_down>len_up and range_diff > 0.1)) and abs(trend_value-fish_value) > 20:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
