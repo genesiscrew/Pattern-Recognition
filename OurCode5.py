@@ -21,7 +21,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[100000:150000]
+ask = ask[1600000:1650000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -34,7 +34,7 @@ ask2 = np.loadtxt('5Years.txt', unpack=True,
 #global patFound
 average = 0
 patternPrice = 0
-PredictionLag = 5
+PredictionLag = 1440
 patternSize = 60
 rsiStack = 0
 rsiUp = 0
@@ -56,6 +56,13 @@ def butter_highpass(cutoff, fs, order=5):
     normal_cutoff = cutoff / nyq
     b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
     return b, a
+
+def fir_highpass(data, cutoff, fs, order=3):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+    y = signal.lfilter(b, a, data)
+    return y
 
 def butter_highpass_filter(data, cutoff, fs, order=5):
     b, a = butter_highpass(cutoff, fs, order=order)
@@ -819,7 +826,7 @@ sine = sine_5Hz + sine_1Hz
 
 dataLength = int(ask.shape[0])
 print 'data length is', dataLength
-startingPoint = 500
+startingPoint = 1000
 
 allData = ((ask+ask)/2)
 myData = ((ask+ask)/2)
@@ -847,6 +854,9 @@ direction = 0
 continueUp = False
 continueDown = False
 counter4 = 0
+max_range = 0
+plsUp = 0
+plsDown = 0
 
 filtered_sine = butter_highpass_filter(allData,20,fps)
 for i in range(len(filtered_sine)):
@@ -909,11 +919,15 @@ for x in xrange(40500):
     
     #med = np.median(norm)
     filtered_sine = butter_highpass_filter(input_Data,20,fps)
-    filtered_sine = [i/sum(filtered_sine) for i in filtered_sine]
+    min_sine = np.amin(filtered_sine)
+    max_sine = np.amax(filtered_sine)
+    filtered_sine = [(2*((i-min_sine)/(max_sine-min_sine)))-1 for i in filtered_sine]
+    filtered_sine = fir_highpass(filtered_sine,20,fps)
     for i in range(len(filtered_sine)):
         filtered_sine[i] = 0.5 * np.log((1+filtered_sine[i])/(1-filtered_sine[i]))
 
     filtered_sine = np.nan_to_num(filtered_sine)
+  
 ##    plt.figure(figsize=(20,10))
 ##    plt.subplot(211)
 ##    plt.plot(range(len( input_Data)), input_Data)
@@ -944,6 +958,14 @@ for x in xrange(40500):
         print('up range is', up_range)
         print('down range', down_range)
         range_diff = up_range-down_range
+        if max_range < abs(range_diff):
+            max_range = abs(range_diff)
+            if np.sign(range_diff) == 1:
+                plsUp = 1
+                plsDown = 0
+            elif np.sign(range_diff) == -1:
+                plsDown = 1
+                plsUp = 0
         print('range difference is', range_diff)
     
     min_fish = 1
@@ -1053,7 +1075,8 @@ for x in xrange(40500):
    # if  ((filtered_sine[-1] <= -1 and range_diff < 0.1)  or (filtered_sine[-1] >= 1 and up_range>down_range and range_diff > 0.1) ):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
-    if  (filtered_sine[-1] > 0.8 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
+   # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
+    if filtered_sine[-1] <= -1 and plsUp == 1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
@@ -1102,7 +1125,8 @@ for x in xrange(40500):
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
-    elif (filtered_sine[-1] < -0.8 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
+    #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
+    elif filtered_sine[-1] >= 1 and plsDown == 1:     
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
