@@ -11,6 +11,7 @@ import itertools
 import multiprocessing
 from scipy import signal
 import pandas as pd
+from numpy import inf
 
 
 
@@ -21,7 +22,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1600000:1650000]
+ask = ask[140000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -855,8 +856,10 @@ continueUp = False
 continueDown = False
 counter4 = 0
 max_range = 0
+max_range2 = 0
 plsUp = 0
 plsDown = 0
+trend_found = 0
 
 filtered_sine = butter_highpass_filter(allData,20,fps)
 for i in range(len(filtered_sine)):
@@ -889,7 +892,7 @@ errorList = []
 bandwidthList = []
 totalLossCounter=0
 maxLossCounter=0
-for x in xrange(40500):
+for x in xrange(700):
     
     upmomentum = False
     downmomentum = False
@@ -921,13 +924,19 @@ for x in xrange(40500):
     filtered_sine = butter_highpass_filter(input_Data,20,fps)
     min_sine = np.amin(filtered_sine)
     max_sine = np.amax(filtered_sine)
-    filtered_sine = [(2*((i-min_sine)/(max_sine-min_sine)))-1 for i in filtered_sine]
+    print('max',max_sine)
+    print('min',min_sine)
+
+    filtered_sine = [((i-min_sine)/(max_sine-min_sine))*(2)+min_sine for i in filtered_sine]
     filtered_sine = fir_highpass(filtered_sine,20,fps)
     for i in range(len(filtered_sine)):
         filtered_sine[i] = 0.5 * np.log((1+filtered_sine[i])/(1-filtered_sine[i]))
-
+           
     filtered_sine = np.nan_to_num(filtered_sine)
-  
+   # filtered_sine[filtered_sine == -inf] = 0
+    #filtered_sine[filtered_sine == inf] = 0
+   
+ 
 ##    plt.figure(figsize=(20,10))
 ##    plt.subplot(211)
 ##    plt.plot(range(len( input_Data)), input_Data)
@@ -957,25 +966,40 @@ for x in xrange(40500):
         down_range = down_rangemax-down_rangemin
         print('up range is', up_range)
         print('down range', down_range)
-        range_diff = up_range-down_range
-        if max_range < abs(range_diff):
-            max_range = abs(range_diff)
-            if np.sign(range_diff) == 1:
-                plsUp = 1
-                plsDown = 0
-            elif np.sign(range_diff) == -1:
-                plsDown = 1
-                plsUp = 0
+        range_diff = abs(len_up)-abs(len_down)
+
+    if  range_diff >= 15 and trend_found == 0:
+        trend_found = 1
+        if np.sign(filtered_sine[-1]) >= 1:
+            plsUp = 1
+            plsDown = 0
+        elif np.sign(filtered_sine[-1]) >= -1:
+            plsDown = 1
+            plsUp = 0
+        
+    if  trend_found == 0 and max_range <= abs(filtered_sine[-1]):
+        max_range = abs(filtered_sine[-1])
+        if np.sign(range_diff) >= 1:
+            plsDown = 1
+            plsUp = 0
+        elif np.sign(range_diff) >= -1:
+            plsUp = 1
+            plsDown = 0
+               
+            
+  
+           
         print('range difference is', range_diff)
-    
+
     min_fish = 1
     max_fish = 5
-    fish_value = 100*(abs(filtered_sine[-1])-min_fish)/(max_fish-min_fish)
+    fish_value = 100*(abs(filtered_sine[-1]))/(max_fish-min_fish)
     min_trend = 0
     max_trend = 0.7
     trend_value = 100*((abs(range_diff)-min_trend)/(max_trend-min_trend))
     print('fisher value is', fish_value)
     print('trend value is', trend_value)
+    print('max range is' , max_range)
 ##    boilinger = bb(np.array(myData[(toWhat-patternSize):toWhat]), 7)
 ##   # print('fucking length ' , myData[(startingPoint-patternSize):startingPoint])
 ##    
@@ -1045,7 +1069,7 @@ for x in xrange(40500):
   
     #patForRec = currentPattern()
     #patternRecognition()
-    #print('pattern actual price')
+    #print('pattern actual price')time.sleep(5);
     #print(patternPrice)
     #print('runnign to what')x
     #print(toWhat)
@@ -1076,7 +1100,7 @@ for x in xrange(40500):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-    if filtered_sine[-1] <= -1 and plsUp == 1:
+    if plsUp == 1 :
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
@@ -1084,16 +1108,16 @@ for x in xrange(40500):
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1112,21 +1136,21 @@ for x in xrange(40500):
             error = abs(allData[toWhat + PredictionLag] - allData[toWhat] - average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##            time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    elif filtered_sine[-1] >= 1 and plsDown == 1:     
+    elif plsDown == 1 :     
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
@@ -1134,16 +1158,16 @@ for x in xrange(40500):
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1160,16 +1184,16 @@ for x in xrange(40500):
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##            time.sleep(5);
             maxLossCounter = maxLossCounter+1
 
             # get the last price, get the future price. find percentage change and compare to predicted
