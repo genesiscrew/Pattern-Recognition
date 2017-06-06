@@ -22,7 +22,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[140000:1700000]
+ask = ask[110000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -860,6 +860,7 @@ max_range2 = 0
 plsUp = 0
 plsDown = 0
 trend_found = 0
+counttrend = 0
 
 filtered_sine = butter_highpass_filter(allData,20,fps)
 for i in range(len(filtered_sine)):
@@ -892,7 +893,9 @@ errorList = []
 bandwidthList = []
 totalLossCounter=0
 maxLossCounter=0
-for x in xrange(700):
+countRange = 0
+rangesum = []
+for x in xrange(1000):
     
     upmomentum = False
     downmomentum = False
@@ -966,18 +969,26 @@ for x in xrange(700):
         down_range = down_rangemax-down_rangemin
         print('up range is', up_range)
         print('down range', down_range)
-        range_diff = abs(len_up)-abs(len_down)
+        range_diff = len_up-len_down
+        range_diffr = up_range - down_range
 
-    if  range_diff >= 15 and trend_found == 0:
+    if  abs(range_diff) >= 10 and  abs(range_diff) <= 20 and trend_found == 0:
+        rangesum.append(range_diff)
+        meanrange = np.mean(rangesum)
+        countRange = countRange+1
+        
+    if  abs(range_diff) >= 10 and trend_found == 0 and countRange == 50:
         trend_found = 1
-        if np.sign(filtered_sine[-1]) >= 1:
+        time.sleep(5)
+        if np.sign(meanrange) >= 1:
             plsUp = 1
             plsDown = 0
-        elif np.sign(filtered_sine[-1]) >= -1:
+        elif np.sign(meanrange) >= -1:
             plsDown = 1
             plsUp = 0
         
-    if  trend_found == 0 and max_range <= abs(filtered_sine[-1]):
+    if  trend_found == 0 and max_range <= abs(filtered_sine[-1]) and counttrend == 0:
+        counttrend = 1
         max_range = abs(filtered_sine[-1])
         if np.sign(range_diff) >= 1:
             plsDown = 1
@@ -996,7 +1007,7 @@ for x in xrange(700):
     fish_value = 100*(abs(filtered_sine[-1]))/(max_fish-min_fish)
     min_trend = 0
     max_trend = 0.7
-    trend_value = 100*((abs(range_diff)-min_trend)/(max_trend-min_trend))
+    trend_value = 100*((abs(range_diffr)-min_trend)/(max_trend-min_trend))
     print('fisher value is', fish_value)
     print('trend value is', trend_value)
     print('max range is' , max_range)
