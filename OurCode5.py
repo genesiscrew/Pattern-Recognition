@@ -22,7 +22,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[110000:1700000]
+ask = ask[1660000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -35,7 +35,7 @@ ask2 = np.loadtxt('5Years.txt', unpack=True,
 #global patFound
 average = 0
 patternPrice = 0
-PredictionLag = 1440
+PredictionLag = 5
 patternSize = 60
 rsiStack = 0
 rsiUp = 0
@@ -862,6 +862,7 @@ plsDown = 0
 trend_found = 0
 counttrend = 0
 
+
 filtered_sine = butter_highpass_filter(allData,20,fps)
 for i in range(len(filtered_sine)):
     filtered_sine[i] = 0.5 * np.log((1+filtered_sine[i])/(1-filtered_sine[i]))
@@ -895,13 +896,25 @@ totalLossCounter=0
 maxLossCounter=0
 countRange = 0
 rangesum = []
-for x in xrange(1000):
+counterela = 0
+counterula = 0
+lossUp = 0
+lossDown = 0
+
+for x in xrange(10000):
     
     upmomentum = False
     downmomentum = False
     tradeUp = False
     tradeDown = False
     Trade = False
+    okUp = 0
+    okDown = 0
+    minIndex = 0
+    maxIndex = 0
+    histPrice = 0
+    indexDiff = 0
+    decision = 0
   
     newPattern = []
     avgLine = ((ask+ask)/2)
@@ -930,7 +943,7 @@ for x in xrange(1000):
     print('max',max_sine)
     print('min',min_sine)
 
-    filtered_sine = [((i-min_sine)/(max_sine-min_sine))*(2)+min_sine for i in filtered_sine]
+    filtered_sine = [(((i-min_sine)/(max_sine-min_sine))*2)-1 for i in filtered_sine]
     filtered_sine = fir_highpass(filtered_sine,20,fps)
     for i in range(len(filtered_sine)):
         filtered_sine[i] = 0.5 * np.log((1+filtered_sine[i])/(1-filtered_sine[i]))
@@ -971,34 +984,36 @@ for x in xrange(1000):
         print('down range', down_range)
         range_diff = len_up-len_down
         range_diffr = up_range - down_range
+    
+##    if  abs(range_diff) > 25 and  abs(range_diff) <= 100 and trend_found == 0:
+##        rangesum.append(range_diff)
+##        meanrange = np.mean(rangesum)
+##        countRange = countRange+1
+##        
+##    if  abs(range_diff) >= 10 and trend_found == 0 and countRange == 1:
+##        trend_found = 1
+##        time.sleep(5)
+##        if np.sign(meanrange) >= 1:
+##            plsUp = 1
+##            plsDown = 0
+##        elif np.sign(meanrange) >= -1:
+##            plsDown = 1
+##            plsUp = 0
+    counterela = counterela + 1
+    if  abs(max_range) <= abs(filtered_sine[-1]):
+        max_range = filtered_sine[-1]
 
-    if  abs(range_diff) >= 10 and  abs(range_diff) <= 20 and trend_found == 0:
-        rangesum.append(range_diff)
-        meanrange = np.mean(rangesum)
-        countRange = countRange+1
-        
-    if  abs(range_diff) >= 10 and trend_found == 0 and countRange == 50:
+    if counterela >= 100 and abs(max_range) >= 1:
         trend_found = 1
-        time.sleep(5)
-        if np.sign(meanrange) >= 1:
-            plsUp = 1
-            plsDown = 0
-        elif np.sign(meanrange) >= -1:
+        if np.sign(max_range) >= 1:
             plsDown = 1
             plsUp = 0
-        
-    if  trend_found == 0 and max_range <= abs(filtered_sine[-1]) and counttrend == 0:
-        counttrend = 1
-        max_range = abs(filtered_sine[-1])
-        if np.sign(range_diff) >= 1:
-            plsDown = 1
-            plsUp = 0
-        elif np.sign(range_diff) >= -1:
+        elif np.sign(max_range) >= -1:
             plsUp = 1
             plsDown = 0
-               
-            
-  
+
+    if trend_found == 1:
+        counterula = counterula + 1
            
         print('range difference is', range_diff)
 
@@ -1099,36 +1114,113 @@ for x in xrange(1000):
         #outcomeRange = avgLineFull[y+20:y+30]
         #currentPoint = avgLineFull[y]
     #currentOutcome = percentChange(ask[toWhat], avgOutcome)
-  
+    histPrice = input_Data[-60:-2]
+    histPrice2 = input_Data[-100:-2]
+    minIndex = np.argmin(histPrice)
+    maxIndex = np.argmax(histPrice)
+    priceDiffMin = ((input_Data[-1]-histPrice[minIndex])/histPrice[minIndex])*100
+    priceDiffMax = ((input_Data[-1]-histPrice[maxIndex])/histPrice[maxIndex])*100
+    priceAverage = np.mean(histPrice)
+    print('average price' , priceAverage)
+    print('price now is' , input_Data[-1])
+    #priceDiffbetween = ((input_Data[-1]-input_Data[-60])/input_Data[-60])*100
+    priceDiffbetween = ((input_Data[-1]-priceAverage)/priceAverage)*100
+    signDiff = np.sign(priceDiffbetween)   
+    if filtered_sine[-1] <= -1 and priceDiffMax < -0.1 and signDiff == -1 :
+        
+       
+       indexDiff = 59 - maxIndex
+       
+       print('max price  is', histPrice[maxIndex])
+       print("price diff is", priceDiffMax)
+       okUp = 1
+       if indexDiff < 5:
+           PredictionLag = 5
+       elif indexDiff > 1 and indexDiff <= 5:
+           PredictionLag = 5
+       elif indexDiff >10 and indexDiff <= 10:
+           PredictionLag = 10
+       elif indexDiff >10 and indexDiff <= 15:
+           PredictionLag = 15
+       elif indexDiff >15 and indexDiff <= 30:
+           PredictionLag = 30
+       elif indexDiff >30 and indexDiff <= 60:
+           PredictionLag = 30
+       
+      
+
+    if filtered_sine[-1] >= 1 and priceDiffMin > 0.1 and signDiff == 1 :
+     
+       indexDiff = 59 - minIndex
+       
+       print("price diff is", priceDiffMin)
+       print('min price is',histPrice[maxIndex])
+       okDown = 1
+       if indexDiff < 5:
+           PredictionLag = 5
+       elif indexDiff > 1 and indexDiff <= 5:
+           PredictionLag = 5
+       elif indexDiff >10 and indexDiff <= 10:
+           PredictionLag = 10
+       elif indexDiff >10 and indexDiff <= 15:
+           PredictionLag = 15
+       elif indexDiff >15 and indexDiff <= 30:
+           PredictionLag = 30
+       elif indexDiff >30 and indexDiff <= 60:
+           PredictionLag = 30
     
   
-
+##    if okUp ==1:
+##        plt.figure(figsize=(20,10))
+##        plt.subplot(211)
+##        plt.plot(range(len( input_Data)), input_Data)
+##        plt.title('generated signal')
+##        plt.subplot(212)
+##        # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##        plt.hist(filtered_sine,10)
+##        plt.title('filtered signal')
+##        plt.show()    
+##        print('current decision is approved and details are as follows', filtered_sine[-1])
+##        decision = input('enter input')
+##    elif okDown ==1:
+##        plt.figure(figsize=(20,10))
+##        plt.subplot(211)
+##        plt.plot(range(len( input_Data)), input_Data)
+##        plt.title('generated signal')
+##        plt.subplot(212)
+##        # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##        plt.hist(filtered_sine,10)
+##        plt.title('filtered signal')
+##        plt.show()    
+##        print('current decision is approved and details are as follows', filtered_sine[-1])
+##        decision = input('enter input')
    # time.sleep(5);
     #
     #(downmomentum == True and tradeDown == True and goDown == True and bandwidth >= 0.0012) or
-    
+
    # if  ((filtered_sine[-1] <= -1 and range_diff < 0.1)  or (filtered_sine[-1] >= 1 and up_range>down_range and range_diff > 0.1) ):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-    if plsUp == 1 :
+    if filtered_sine[-1] <= -1 and okUp == 1:
+   # if decision == 1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
-            print('trade won on up !!!')
+            print('trade won on up !!!, predictionLag was', PredictionLag)
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-##            plt.figure(figsize=(20,10))
-##            plt.subplot(211)
-##            plt.plot(range(len( input_Data)), input_Data)
-##            plt.title('generated signal')
-##            plt.subplot(212)
-##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##            plt.hist(filtered_sine,10)
-##            plt.title('filtered signal')
-##            plt.show()
-##            time.sleep(5);
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1141,44 +1233,45 @@ for x in xrange(1000):
             loss = loss + 1
             direction = -1
             pastWinStatus = -1
-            
-            print('trade Lost on up prediction:(')
+            lossUp = lossUp + 1
+            print('trade Lost on up prediction:(, prediction lag ', PredictionLag)
             numTrades = numTrades + 1
             error = abs(allData[toWhat + PredictionLag] - allData[toWhat] - average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-##            plt.figure(figsize=(20,10))
-##            plt.subplot(211)
-##            plt.plot(range(len( input_Data)), input_Data)
-##            plt.title('generated signal')
-##            plt.subplot(212)
-##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##            plt.hist(filtered_sine,10)
-##            plt.title('filtered signal')
-##            plt.show()
-##            time.sleep(5);
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    elif plsDown == 1 :     
+    elif filtered_sine[-1] >= 1 and okDown == 1:
+   # if decision == -1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
-            print('trade won on down!!!')
+            print('trade won on down!!! prediction lag was', PredictionLag)
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-##            plt.figure(figsize=(20,10))
-##            plt.subplot(211)
-##            plt.plot(range(len( input_Data)), input_Data)
-##            plt.title('generated signal')
-##            plt.subplot(212)
-##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##            plt.hist(filtered_sine,10)
-##            plt.title('filtered signal')
-##            plt.show()
-##            time.sleep(5);
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1187,24 +1280,24 @@ for x in xrange(1000):
                maxLossCounter=0;
         else:
             direction = 1
-            
+            lossDown = lossDown + 1
             pastWinStatus = -1
             loss = loss + 1
-            print('trade Lost on fdown prediction:(')
+            print('trade Lost on fdown prediction:(, prediction lag was' , PredictionLag)
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-##            plt.figure(figsize=(20,10))
-##            plt.subplot(211)
-##            plt.plot(range(len( input_Data)), input_Data)
-##            plt.title('generated signal')
-##            plt.subplot(212)
-##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##            plt.hist(filtered_sine,10)
-##            plt.title('filtered signal')
-##            plt.show()
-##            time.sleep(5);
+            plt.figure(figsize=(20,10))
+            plt.subplot(211)
+            plt.plot(range(len( input_Data)), input_Data)
+            plt.title('generated signal')
+            plt.subplot(212)
+           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+            plt.hist(filtered_sine,10)
+            plt.title('filtered signal')
+            plt.show()
+            time.sleep(5);
             maxLossCounter = maxLossCounter+1
 
             # get the last price, get the future price. find percentage change and compare to predicted
