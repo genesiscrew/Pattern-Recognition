@@ -22,7 +22,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1660000:1700000]
+ask = ask[1610000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -900,8 +900,12 @@ counterela = 0
 counterula = 0
 lossUp = 0
 lossDown = 0
+previousDiffMax = 999
+previousDiffMin = 999
+counterUpTrend = 0
+counterDownTrend = 0
 
-for x in xrange(10000):
+for x in xrange(100000):
     
     upmomentum = False
     downmomentum = False
@@ -915,6 +919,8 @@ for x in xrange(10000):
     histPrice = 0
     indexDiff = 0
     decision = 0
+    stdDev = 0
+    keyLag = 0
   
     newPattern = []
     avgLine = ((ask+ask)/2)
@@ -1114,6 +1120,7 @@ for x in xrange(10000):
         #outcomeRange = avgLineFull[y+20:y+30]
         #currentPoint = avgLineFull[y]
     #currentOutcome = percentChange(ask[toWhat], avgOutcome)
+    stdDev = np.std(input_Data[-1000:-1])
     histPrice = input_Data[-60:-2]
     histPrice2 = input_Data[-100:-2]
     minIndex = np.argmin(histPrice)
@@ -1123,6 +1130,20 @@ for x in xrange(10000):
     priceAverage = np.mean(histPrice)
     print('average price' , priceAverage)
     print('price now is' , input_Data[-1])
+    print('standard deviation is' , stdDev)
+    if stdDev >= 0.001:
+        if priceDiffMax < -0.1 and (previousDiffMax < -0.1 or previousDiffMax == 999 ):
+            counterUpTrend = counterUpTrend+1
+            previousDiffMax = priceDiffMax
+        else:
+            counterUpTrend = 0
+            previousDiffMax = 999
+        if priceDiffMin > 0.1 and (previousDiffMin > 0.1 or previousDiffMin == 999):
+            counterDownTrend = counterDownTrend+1
+            previousDiffMin = priceDiffMin
+        else:
+            counterDownTrend = 0
+            previousDiffMin = 999
     #priceDiffbetween = ((input_Data[-1]-input_Data[-60])/input_Data[-60])*100
     priceDiffbetween = ((input_Data[-1]-priceAverage)/priceAverage)*100
     signDiff = np.sign(priceDiffbetween)   
@@ -1131,21 +1152,23 @@ for x in xrange(10000):
        
        indexDiff = 59 - maxIndex
        
-       print('max price  is', histPrice[maxIndex])
+       print('index diff  is', indexDiff)
        print("price diff is", priceDiffMax)
        okUp = 1
        if indexDiff < 5:
            PredictionLag = 5
        elif indexDiff > 1 and indexDiff <= 5:
-           PredictionLag = 5
-       elif indexDiff >10 and indexDiff <= 10:
            PredictionLag = 10
-       elif indexDiff >10 and indexDiff <= 15:
+       elif indexDiff >5 and indexDiff <= 10:
            PredictionLag = 15
+       elif indexDiff >10 and indexDiff <= 15:
+           PredictionLag = 30
        elif indexDiff >15 and indexDiff <= 30:
            PredictionLag = 30
        elif indexDiff >30 and indexDiff <= 60:
            PredictionLag = 30
+       else:
+           PredictionLag = 60
        
       
 
@@ -1157,10 +1180,10 @@ for x in xrange(10000):
        print('min price is',histPrice[maxIndex])
        okDown = 1
        if indexDiff < 5:
-           PredictionLag = 5
+           PredictionLag = keyLag
        elif indexDiff > 1 and indexDiff <= 5:
            PredictionLag = 5
-       elif indexDiff >10 and indexDiff <= 10:
+       elif indexDiff >5 and indexDiff <= 10:
            PredictionLag = 10
        elif indexDiff >10 and indexDiff <= 15:
            PredictionLag = 15
@@ -1168,12 +1191,15 @@ for x in xrange(10000):
            PredictionLag = 30
        elif indexDiff >30 and indexDiff <= 60:
            PredictionLag = 30
+       else:
+           PredictionLag = 60
     
-  
+    if abs(filtered_sine[-1]) <= 0.5:
+       PredictionLag = 30
 ##    if okUp ==1:
 ##        plt.figure(figsize=(20,10))
 ##        plt.subplot(211)
-##        plt.plot(range(len( input_Data)), input_Data)
+##        plt.plot(range(len( input_Dataneeds	to	keep	)), input_Data)
 ##        plt.title('generated signal')
 ##        plt.subplot(212)
 ##        # norm_data = np.histogram(filtered_sine, bins=10, density=True)
@@ -1202,7 +1228,7 @@ for x in xrange(10000):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-    if filtered_sine[-1] <= -1 and okUp == 1:
+    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (filtered_sine[-1] <= -0.5 and counterUpTrend >= 3):
    # if decision == 1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
@@ -1253,7 +1279,7 @@ for x in xrange(10000):
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    elif filtered_sine[-1] >= 1 and okDown == 1:
+    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (filtered_sine[-1] >= 0.5 and counterDownTrend >= 3):
    # if decision == -1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
