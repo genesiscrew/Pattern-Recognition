@@ -900,8 +900,8 @@ counterela = 0
 counterula = 0
 lossUp = 0
 lossDown = 0
-previousDiffMax = 999
-previousDiffMin = 999
+previousDiffMax = 0
+previousDiffMin = 0
 counterUpTrend = 0
 counterDownTrend = 0
 
@@ -1134,19 +1134,19 @@ for x in xrange(100000):
     print('price now is' , input_Data[-1])
     print('standard deviation is' , stdDev)
     if stdDev >= 0.001:
-        if  priceDiffMax < -0.1 and (previousDiffMax < -0.1 or previousDiffMax == 999) and signDiff == -1:
-            counterDownTrend = counterUpTrend+1
+        if  priceDiffMax < -0.1 and previousDiffMax < -0.1 and signDiff == -1:
+            counterUpTrend = counterUpTrend+1
             previousDiffMax = priceDiffMax
         
         else:
             counterUpTrend = 0
-            previousDiffMax = 999
-        if priceDiffMin > 0.1 and (previousDiffMin > 0.1 or previousDiffMin == 999) and signDiff == 1:
-            counterUpTrend = counterDownTrend+1
+            previousDiffMax = 0
+        if priceDiffMin > 0.1 and previousDiffMin > 0.1 and signDiff == 1:
+            counterDownTrend = counterDownTrend+1
             previousDiffMin = priceDiffMin
         else:
             counterDownTrend = 0
-            previousDiffMin = 999
+            previousDiffMin = 0
     #priceDiffbetween = ((input_Data[-1]-input_Data[-60])/input_Data[-60])*100
    
     if filtered_sine[-1] <= -1 and priceDiffMax < -0.1 and signDiff == -1 :
@@ -1196,8 +1196,11 @@ for x in xrange(100000):
        else:
            PredictionLag = 60
     
-    if abs(filtered_sine[-1]) <= 0.5:
+    if abs(filtered_sine[-1]) <= 0.7:
        PredictionLag = 60
+
+       print("up trend  count is", counterUpTrend)
+       print("down trend  count is", counterDownTrend)
 ##    if okUp ==1:
 ##        plt.figure(figsize=(20,10))
 ##        plt.subplot(211)
@@ -1230,7 +1233,7 @@ for x in xrange(100000):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (stdDev > 0.001 and filtered_sine[-1] <= -0.7 and counterUpTrend >= 8):
+    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (stdDev > 0.001 and filtered_sine[-1] <= -0.5 and counterUpTrend >= 3):
    # if decision == 1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
@@ -1281,7 +1284,7 @@ for x in xrange(100000):
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (stdDev > 0.001 and filtered_sine[-1] >= 0.7 and counterDownTrend >= 8):
+    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (stdDev > 0.001 and filtered_sine[-1] >= 0.5 and counterDownTrend >= 3):
    # if decision == -1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
