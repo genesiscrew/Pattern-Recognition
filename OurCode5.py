@@ -925,6 +925,10 @@ for x in xrange(100000):
     decision = 0
     stdDev = 0
     keyLag = 0
+    if totalUpCounts > 500 or totalDownCounts > 500:
+        totalUpCounts = 0
+        totalDownCounts = 0
+        
   
     newPattern = []
     avgLine = ((ask+ask)/2)
@@ -1212,6 +1216,8 @@ for x in xrange(100000):
 
     print("down trend  count is", counterUpTrend)
     print("up trend  count is", counterDownTrend)
+    print("total down trend  count is",  totalUpCounts)
+    print("total up trend  count is",  totalDownCounts)
     if len(upTrendAv) != 0:
         print("down trend  signal is", np.amin(upTrendAv))
     if len(downTrendAv) != 0:
@@ -1248,7 +1254,7 @@ for x in xrange(100000):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (stdDev > 0.001 and filtered_sine[-1] <= -0.5 and counterUpTrend >= 15 and counterUpTrend <= 40 and  totalDownCounts>totalUpCounts):
+    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (stdDev > 0.001 and filtered_sine[-1] <= -0.5 and counterUpTrend >= 15 and counterUpTrend <= 40 and  totalUpCounts>totalDownCounts):
    # if decision == 1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
@@ -1299,7 +1305,7 @@ for x in xrange(100000):
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (stdDev > 0.001 and filtered_sine[-1] >= 0.5 and counterDownTrend >= 15  and counterDownTrend <= 40 and  totalUpCounts>totalDownCounts):
+    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (stdDev > 0.001 and filtered_sine[-1] >= 0.5 and counterDownTrend >= 15  and counterDownTrend <= 40 and  totalDownCounts>totalUpCounts):
    # if decision == -1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
