@@ -22,7 +22,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1610000:1700000]
+ask = ask[1290000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -1128,25 +1128,27 @@ for x in xrange(100000):
     priceDiffMin = ((input_Data[-1]-histPrice[minIndex])/histPrice[minIndex])*100
     priceDiffMax = ((input_Data[-1]-histPrice[maxIndex])/histPrice[maxIndex])*100
     priceAverage = np.mean(histPrice)
+    priceDiffbetween = ((input_Data[-1]-priceAverage)/priceAverage)*100
+    signDiff = np.sign(priceDiffbetween)   
     print('average price' , priceAverage)
     print('price now is' , input_Data[-1])
     print('standard deviation is' , stdDev)
     if stdDev >= 0.001:
-        if priceDiffMax < -0.1 and (previousDiffMax < -0.1 or previousDiffMax == 999 ):
-            counterUpTrend = counterUpTrend+1
+        if  priceDiffMax < -0.1 and (previousDiffMax < -0.1 or previousDiffMax == 999) and signDiff == -1:
+            counterDownTrend = counterUpTrend+1
             previousDiffMax = priceDiffMax
+        
         else:
             counterUpTrend = 0
             previousDiffMax = 999
-        if priceDiffMin > 0.1 and (previousDiffMin > 0.1 or previousDiffMin == 999):
-            counterDownTrend = counterDownTrend+1
+        if priceDiffMin > 0.1 and (previousDiffMin > 0.1 or previousDiffMin == 999) and signDiff == 1:
+            counterUpTrend = counterDownTrend+1
             previousDiffMin = priceDiffMin
         else:
             counterDownTrend = 0
             previousDiffMin = 999
     #priceDiffbetween = ((input_Data[-1]-input_Data[-60])/input_Data[-60])*100
-    priceDiffbetween = ((input_Data[-1]-priceAverage)/priceAverage)*100
-    signDiff = np.sign(priceDiffbetween)   
+   
     if filtered_sine[-1] <= -1 and priceDiffMax < -0.1 and signDiff == -1 :
         
        
@@ -1195,7 +1197,7 @@ for x in xrange(100000):
            PredictionLag = 60
     
     if abs(filtered_sine[-1]) <= 0.5:
-       PredictionLag = 30
+       PredictionLag = 60
 ##    if okUp ==1:
 ##        plt.figure(figsize=(20,10))
 ##        plt.subplot(211)
@@ -1228,7 +1230,7 @@ for x in xrange(100000):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (filtered_sine[-1] <= -0.5 and counterUpTrend >= 3):
+    if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (stdDev > 0.001 and filtered_sine[-1] <= -0.7 and counterUpTrend >= 8):
    # if decision == 1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
@@ -1279,7 +1281,7 @@ for x in xrange(100000):
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (filtered_sine[-1] >= 0.5 and counterDownTrend >= 3):
+    elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (stdDev > 0.001 and filtered_sine[-1] >= 0.7 and counterDownTrend >= 8):
    # if decision == -1:
         if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
