@@ -852,8 +852,7 @@ optimalPatterns = []
 #patternStorage()
 pastWinStatus = 0
 maxLossCounter = 0
-goUp = False
-goDown = False
+
 direction = 0
 continueUp = False
 continueDown = False
@@ -932,6 +931,8 @@ for x in xrange(100000):
     stdDev = 0
     dontTrade = 0
     keyLag = 0
+    goUp = 0
+    goDown = 0
     slopeRange = []
     if totalUpCounts > 250 or totalDownCounts > 250:
         totalUpCounts = 0
@@ -1220,7 +1221,7 @@ for x in xrange(100000):
            PredictionLag = 15
     
     #if abs(filtered_sine[-1]) <= 0.7:
-    PredictionLag = 60
+    PredictionLag = 15
 
     print("down trend  count is", counterUpTrend)
     print("up trend  count is", counterDownTrend)
@@ -1281,15 +1282,21 @@ for x in xrange(100000):
     print('Minimum support is:' ,lessthanCurrent)
     if len(morethanCurrent) > 0 and len(lessthanCurrent) > 0:
         minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]
-        bothFull = 1
+        bothfull = 1
     if input_Data[-1] < minValue or input_Data[-1] > maxValue:
         dontTrade = 1 
-    if len(ml_results) > 2 and bothfull == 1 and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.5):
-        print('not tradding')
-        dontTrade = 1
-    if len(ml_results) > 2 and bothfull == 1 and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.5):
-        print('not tradding')
-        dontTrade = 1
+    if len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.3 and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.2):
+        print('betting the price will continue moving up once lower threshold broke significantly')
+        goUp = 1
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.3 and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.2):
+        print('betting the price will continue moving down once upper threshold broke significantly')
+        goDown = 1
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.3 and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.2):
+        print('betting that price will reverse downwards once is close to upper threshold')
+        goDown = 1
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.3 and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.2):
+        print('betting that price will reverse upwards once is close to lower threshold')
+        goUp = 1
     #nearestValue = np.find_nearest( ml_results, input_Data[-1] )
     
     #print("interval data")
@@ -1341,7 +1348,8 @@ for x in xrange(100000):
    # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 99):
    # if abs(trendStrength) >= 50 and np.sign(trendStrength) == 1 and doTrade == 1 and filtered_sine[-1] > 0:
    #if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 50):
-    if filtered_sine[-1] <= -0.5 and  counterUpTrend>counterDownTrend and abs(trendStrength) > 15 and sum(n < 0 for n in slopeRange) == lastMinute and len(ml_results) > 2 and dontTrade == 0:
+   # if filtered_sine[-1] <= -0.5 and  counterUpTrend>counterDownTrend and abs(trendStrength) > 15 and sum(n < 0 for n in slopeRange) == lastMinute and len(ml_results) > 2 and dontTrade == 0:
+    if goUp == 1:
         tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
@@ -1408,8 +1416,9 @@ for x in xrange(100000):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
     #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001) or  (filtered_sine[-1] >= 0.5 and  totalDownCounts>totalUpCounts and trendStrength > 50):
-    elif  filtered_sine[-1] >= 0.5 and  counterDownTrend>counterUpTrend and abs(trendStrength) > 15 and (sum(n > 0 for n in slopeRange)) == lastMinute and len(ml_results) > 2 and dontTrade == 0:
+    #elif  filtered_sine[-1] >= 0.5 and  counterDownTrend>counterUpTrend and abs(trendStrength) > 15 and (sum(n > 0 for n in slopeRange)) == lastMinute and len(ml_results) > 2 and dontTrade == 0:
     #elif abs(trendStrength) >= 50 and np.sign(trendStrength) == -1 and doTrade == 1 and filtered_sine[-1] < 0:
+    if goDown == 1:
 ##        tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
