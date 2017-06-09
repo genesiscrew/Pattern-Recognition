@@ -1217,7 +1217,7 @@ for x in xrange(100000):
        elif indexDiff >30 and indexDiff <= 60:
            PredictionLag = 30
        else:
-           PredictionLag = 60
+           PredictionLag = 15
     
     #if abs(filtered_sine[-1]) <= 0.7:
     PredictionLag = 60
@@ -1272,15 +1272,23 @@ for x in xrange(100000):
     minValue = np.amin(ml_results)
     currentShit = input_Data[-1]
     lessthanCurrent = []
+    bothfull = 0
     morethanCurrent = []
     lessthanCurrent = ml_results[np.where(ml_results <currentShit)]
     morethanCurrent = ml_results[np.where(ml_results >  currentShit)]
-    print('Mnimu support is:' ,morethanCurrent)
+    print('Maximum support is:' ,morethanCurrent)
+    print('current price is:' ,currentShit )
+    print('Minimum support is:' ,lessthanCurrent)
     if len(morethanCurrent) > 0 and len(lessthanCurrent) > 0:
-        minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]*0.25
+        minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]
+        bothFull = 1
     if input_Data[-1] < minValue or input_Data[-1] > maxValue:
         dontTrade = 1 
-    elif len(ml_results) > 2 and input_Data[-1]-np.mean(lessthanCurrent) <=  minMaxDiff:
+    if len(ml_results) > 2 and bothfull == 1 and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.5):
+        print('not tradding')
+        dontTrade = 1
+    if len(ml_results) > 2 and bothfull == 1 and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.5):
+        print('not tradding')
         dontTrade = 1
     #nearestValue = np.find_nearest( ml_results, input_Data[-1] )
     
