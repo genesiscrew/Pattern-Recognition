@@ -13,6 +13,8 @@ from scipy import signal
 import pandas as pd
 from numpy import inf
 from sklearn import linear_model
+from sklearn.cluster import MeanShift, estimate_bandwidth
+import trendy
 
 
 
@@ -23,7 +25,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1620000:1700000]
+ask = ask[1490000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -911,6 +913,7 @@ upTrendAv = []
 downTrendAv = []
 tradeCounter = 0
 doTrade = 0
+lastMinute = 30
 
 for x in xrange(100000):
     
@@ -928,6 +931,7 @@ for x in xrange(100000):
     decision = 0
     stdDev = 0
     keyLag = 0
+    slopeRange = []
     if totalUpCounts > 250 or totalDownCounts > 250:
         totalUpCounts = 0
         totalDownCounts = 0
@@ -1214,8 +1218,8 @@ for x in xrange(100000):
        else:
            PredictionLag = 60
     
-    if abs(filtered_sine[-1]) <= 0.7:
-       PredictionLag = 60
+    #if abs(filtered_sine[-1]) <= 0.7:
+    PredictionLag = 60
 
     print("down trend  count is", counterUpTrend)
     print("up trend  count is", counterDownTrend)
@@ -1231,15 +1235,36 @@ for x in xrange(100000):
         doTrade = 1
 
     regr = linear_model.LinearRegression()
-    slope_data = input_Data[-30:toWhat]
-    time_interval = list(range(0,30))
+    slope_data = input_Data[-lastMinute:toWhat]
+    time_interval = list(range(0,lastMinute))
     x1 = np.array(time_interval).reshape(len(time_interval), 1)
     y1 = np.array(slope_data).reshape(len(slope_data), 1)
     #print(len(buy_data), len(time_interval))
     regr.fit(x1, y1)
     #print('Coefficients: \n', regr.coef_[0][0])
     slope_buy = regr.coef_[0][0]
-    print("slope is",  slope_buy)
+    for i in range(lastMinute):
+        slope_ok = ((input_Data[-1]-input_Data[-lastMinute-i])/lastMinute)
+        slopeRange.append(slope_ok)
+        print("slope is",  slope_ok)
+    data2 = input_Data
+    data2 = np.reshape(data2,(-1,25))
+    bandwidth = estimate_bandwidth(data2, quantile=0.1, n_samples=100)
+    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+    # fit the data
+    ms.fit(data2)
+    ml_results = []
+    for k in range(len(np.unique(ms.labels_))):
+        my_members = ms.labels_ == k
+        values = data2[my_members, 0]    
+        #print values
+        
+        # find the edges
+        ml_results.append(min(values))
+        ml_results.append(max(values))
+
+
+    
     #print("interval data")
 ##    if okUp ==1:
 ##        plt.figure(figsize=(20,10))
@@ -1276,7 +1301,7 @@ for x in xrange(100000):
    # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 99):
    # if abs(trendStrength) >= 50 and np.sign(trendStrength) == 1 and doTrade == 1 and filtered_sine[-1] > 0:
    #if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 50):
-    if (filtered_sine[-1] <= -0.8 and  totalUpCounts>totalDownCounts and trendStrength > 10):
+    if (filtered_sine[-1] <= -0.5 and  counterUpTrend>counterDownTrend and abs(trendStrength) > 15 and (sum(n < 0 for n in slopeRange)) == lastMinute):
         tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
@@ -1299,6 +1324,12 @@ for x in xrange(100000):
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
+            for k in ml_results:
+                plt.axhline(y=k)
+
+            #Change font size of x-axis    
+            plt.tick_params(axis='x', which='major', labelsize=6)
+            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
@@ -1327,13 +1358,19 @@ for x in xrange(100000):
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
+            for k in ml_results:
+                plt.axhline(y=k)
+
+            #Change font size of x-axis    
+            plt.tick_params(axis='x', which='major', labelsize=6)
+            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
     #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001) or  (filtered_sine[-1] >= 0.5 and  totalDownCounts>totalUpCounts and trendStrength > 50):
-    elif  (filtered_sine[-1] >= 0.8 and  totalDownCounts>totalUpCounts and trendStrength > 10):
+    elif  (filtered_sine[-1] >= 0.5 and  counterDownTrend>counterUpTrend and abs(trendStrength) > 15 and (sum(n > 0 for n in slopeRange)) == lastMinute):
     #elif abs(trendStrength) >= 50 and np.sign(trendStrength) == -1 and doTrade == 1 and filtered_sine[-1] < 0:
 ##        tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
@@ -1358,6 +1395,12 @@ for x in xrange(100000):
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
+            for k in ml_results:
+                plt.axhline(y=k)
+
+            #Change font size of x-axis    
+            plt.tick_params(axis='x', which='major', labelsize=6)
+            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
@@ -1384,6 +1427,12 @@ for x in xrange(100000):
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
+            for k in ml_results:
+                plt.axhline(y=k)
+
+            #Change font size of x-axis    
+            plt.tick_params(axis='x', which='major', labelsize=6)
+            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             maxLossCounter = maxLossCounter+1
 
