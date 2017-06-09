@@ -1221,7 +1221,7 @@ for x in xrange(100000):
            PredictionLag = 15
     
     #if abs(filtered_sine[-1]) <= 0.7:
-    PredictionLag = 10
+    #PredictionLag = 5
 
     print("down trend  count is", counterUpTrend)
     print("up trend  count is", counterDownTrend)
@@ -1285,18 +1285,24 @@ for x in xrange(100000):
         bothfull = 1
     if input_Data[-1] < minValue or input_Data[-1] > maxValue:
         dontTrade = 1 
-    if len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0 and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.4):
+    if len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.2 and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.1):
         print('betting the price will continue moving up once lower threshold broke significantly')
         goUp = 1
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < 0 and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.4):
+        PredictionLag = 10
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.2 and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.1):
         print('betting the price will continue moving down once upper threshold broke significantly')
         goDown = 1
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0 and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]+(minMaxDiff*0.05):
+        PredictionLag = 10
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.2 and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] > morethanCurrent[0]-(minMaxDiff*0.05):
         print('betting that price will reverse downwards once is close to upper threshold')
+        time.sleep(5)
         goDown = 1
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < 0 and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]-(minMaxDiff*0.05):
+        PredictionLag = 30
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.2 and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <  lessthanCurrent[-1]+(minMaxDiff*0.05):
         print('betting that price will reverse upwards once is close to lower threshold')
+        time.sleep(5)
         goUp = 1
+        PredictionLag = 30
     #nearestValue = np.find_nearest( ml_results, input_Data[-1] )
     
     #print("interval data")
@@ -1363,21 +1369,21 @@ for x in xrange(100000):
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)),input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-
-
-            #Change font size of x-axis    
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)),input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##
+##            #Change font size of x-axis    
+##            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1396,21 +1402,21 @@ for x in xrange(100000):
             error = abs(allData[toWhat + PredictionLag] - allData[toWhat] - average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-
-
-            #Change font size of x-axis    
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##
+##            #Change font size of x-axis    
+##            time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
@@ -1433,22 +1439,22 @@ for x in xrange(100000):
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-
-
-            #Change font size of x-axis    
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##
+##            #Change font size of x-axis    
+##            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1465,18 +1471,18 @@ for x in xrange(100000):
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##            time.sleep(5);
             maxLossCounter = maxLossCounter+1
 
             # get the last price, get the future price. find percentage change and compare to predicted
