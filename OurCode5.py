@@ -12,6 +12,7 @@ import multiprocessing
 from scipy import signal
 import pandas as pd
 from numpy import inf
+from sklearn import linear_model
 
 
 
@@ -22,7 +23,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1290000:1700000]
+ask = ask[1620000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -927,7 +928,7 @@ for x in xrange(100000):
     decision = 0
     stdDev = 0
     keyLag = 0
-    if totalUpCounts > 1000 or totalDownCounts > 1000:
+    if totalUpCounts > 250 or totalDownCounts > 250:
         totalUpCounts = 0
         totalDownCounts = 0
         
@@ -1166,7 +1167,7 @@ for x in xrange(100000):
     #priceDiffbetween = ((input_Data[-1]-input_Data[-60])/input_Data[-60])*100
     previousDiffMax =  priceDiffMax
     previousDiffMin =  priceDiffMin
-    if filtered_sine[-1] <= -1 and priceDiffMax < -0.1 and signDiff == -1 :
+    if filtered_sine[-1] <= -1 and priceDiffMax < -0.2 and signDiff == -1 :
         
        
        indexDiff = 59 - maxIndex
@@ -1191,7 +1192,7 @@ for x in xrange(100000):
        
       
 
-    if filtered_sine[-1] >= 1 and priceDiffMin > 0.1 and signDiff == 1 :
+    if filtered_sine[-1] >= 1 and priceDiffMin > 0.2 and signDiff == 1 :
      
        indexDiff = 59 - minIndex
        
@@ -1228,6 +1229,18 @@ for x in xrange(100000):
     print("trade counter is", tradeCounter)
     if abs(trendStrength) >= 99:
         doTrade = 1
+
+    regr = linear_model.LinearRegression()
+    slope_data = input_Data[-30:toWhat]
+    time_interval = list(range(0,30))
+    x1 = np.array(time_interval).reshape(len(time_interval), 1)
+    y1 = np.array(slope_data).reshape(len(slope_data), 1)
+    #print(len(buy_data), len(time_interval))
+    regr.fit(x1, y1)
+    #print('Coefficients: \n', regr.coef_[0][0])
+    slope_buy = regr.coef_[0][0]
+    print("slope is",  slope_buy)
+    #print("interval data")
 ##    if okUp ==1:
 ##        plt.figure(figsize=(20,10))
 ##        plt.subplot(211)
@@ -1260,15 +1273,17 @@ for x in xrange(100000):
       
     #if ((fish_value > trend_value and filtered_sine[-1] < -1) or (trend_value > fish_value and filtered_sine[-1] > 0.8 and up_range>down_range and len_up>len_down and len_diff > 3)) and abs(trend_value-fish_value) > 20 :
    # if  (filtered_sine[-1] > 1 and up_range>down_range and down_range > 0 and range_diff > 0.15  and len_up>len_down and len_diff > 1):
-   # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001  and counterUpTrend < 3) or (stdDev > 0.001 and filtered_sine[-1] <= -0.5 and counterUpTrend >= 15 and counterUpTrend <= 40 and  totalUpCounts>totalDownCounts and trendStrength > 99):
-    if abs(trendStrength) >= 99 and np.sign(trendStrength) == 1 and doTrade == 1:
+   # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 99):
+   # if abs(trendStrength) >= 50 and np.sign(trendStrength) == 1 and doTrade == 1 and filtered_sine[-1] > 0:
+   #if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 50):
+    if (filtered_sine[-1] <= -0.8 and  totalUpCounts>totalDownCounts and trendStrength > 10):
         tradeCounter = tradeCounter + 1
-        if tradeCounter == 5:
-            doTrade = 0
-            tradeCounter = 0
-            totalUpCounts = 0
-            totalDownCounts = 0
-        if  allData[toWhat+5] - allData[toWhat] >= 0 :
+##        if tradeCounter == 5:
+##            doTrade = 0
+##            tradeCounter = 0
+##            totalUpCounts = 0
+##            totalDownCounts = 0
+        if  allData[toWhat+PredictionLag] - allData[toWhat] >= 0 :
             win = win + 1
             pastWinStatus = 0
             print('trade won on up !!!, predictionLag was', PredictionLag)
@@ -1317,16 +1332,17 @@ for x in xrange(100000):
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
-    #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001 and counterDownTrend < 3) or  (stdDev > 0.001 and filtered_sine[-1] >= 0.5 and counterDownTrend >= 15  and counterDownTrend <= 40 and  totalDownCounts>totalUpCounts and trendStrength > 99):
-    if abs(trendStrength) >= 99 and np.sign(trendStrength) == -1 and doTrade == 1:
-        tradeCounter = tradeCounter + 1
-        if tradeCounter == 5:
-            doTrade = 0
-            tradeCounter = 0
-            totalUpCounts = 0
-            totalDownCounts = 0
+    #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001) or  (filtered_sine[-1] >= 0.5 and  totalDownCounts>totalUpCounts and trendStrength > 50):
+    elif  (filtered_sine[-1] >= 0.8 and  totalDownCounts>totalUpCounts and trendStrength > 10):
+    #elif abs(trendStrength) >= 50 and np.sign(trendStrength) == -1 and doTrade == 1 and filtered_sine[-1] < 0:
+##        tradeCounter = tradeCounter + 1
+##        if tradeCounter == 5:
+##            doTrade = 0
+##            tradeCounter = 0
+##            totalUpCounts = 0
+##            totalDownCounts = 0
             
-        if  allData[toWhat+5] - allData[toWhat] <= 0:
+        if  allData[toWhat+PredictionLag] - allData[toWhat] <= 0:
             win = win + 1
             pastWinStatus = 0
             print('trade won on down!!! prediction lag was', PredictionLag)
