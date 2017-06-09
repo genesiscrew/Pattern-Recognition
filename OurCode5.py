@@ -1221,7 +1221,7 @@ for x in xrange(100000):
            PredictionLag = 15
     
     #if abs(filtered_sine[-1]) <= 0.7:
-    PredictionLag = 15
+    PredictionLag = 10
 
     print("down trend  count is", counterUpTrend)
     print("up trend  count is", counterDownTrend)
@@ -1285,16 +1285,16 @@ for x in xrange(100000):
         bothfull = 1
     if input_Data[-1] < minValue or input_Data[-1] > maxValue:
         dontTrade = 1 
-    if len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.3 and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.2):
+    if len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0 and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.4):
         print('betting the price will continue moving up once lower threshold broke significantly')
         goUp = 1
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.3 and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.2):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < 0 and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.4):
         print('betting the price will continue moving down once upper threshold broke significantly')
         goDown = 1
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.3 and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.2):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0 and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]+(minMaxDiff*0.05):
         print('betting that price will reverse downwards once is close to upper threshold')
         goDown = 1
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.3 and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.2):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < 0 and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]-(minMaxDiff*0.05):
         print('betting that price will reverse upwards once is close to lower threshold')
         goUp = 1
     #nearestValue = np.find_nearest( ml_results, input_Data[-1] )
