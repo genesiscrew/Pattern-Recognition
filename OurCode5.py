@@ -25,7 +25,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1490000:1700000]
+ask = ask[1440000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -930,6 +930,7 @@ for x in xrange(100000):
     indexDiff = 0
     decision = 0
     stdDev = 0
+    dontTrade = 0
     keyLag = 0
     slopeRange = []
     if totalUpCounts > 250 or totalDownCounts > 250:
@@ -1246,10 +1247,10 @@ for x in xrange(100000):
     for i in range(lastMinute):
         slope_ok = ((input_Data[-1]-input_Data[-lastMinute-i])/lastMinute)
         slopeRange.append(slope_ok)
-        print("slope is",  slope_ok)
+       # print("slope is",  slope_ok)
     data2 = input_Data
     data2 = np.reshape(data2,(-1,25))
-    bandwidth = estimate_bandwidth(data2, quantile=0.1, n_samples=100)
+    bandwidth = estimate_bandwidth(data2, quantile=0.2, n_samples=1000)
     ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
     # fit the data
     ms.fit(data2)
@@ -1264,6 +1265,24 @@ for x in xrange(100000):
         ml_results.append(max(values))
 
 
+
+    ml_fuck = np.array(ml_results)
+    ml_results =  ml_fuck.flatten()
+    maxValue = np.amax(ml_results)
+    minValue = np.amin(ml_results)
+    currentShit = input_Data[-1]
+    lessthanCurrent = []
+    morethanCurrent = []
+    lessthanCurrent = ml_results[np.where(ml_results <currentShit)]
+    morethanCurrent = ml_results[np.where(ml_results >  currentShit)]
+    print('Mnimu support is:' ,morethanCurrent)
+    if len(morethanCurrent) > 0 and len(lessthanCurrent) > 0:
+        minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]*0.25
+    if input_Data[-1] < minValue or input_Data[-1] > maxValue:
+        dontTrade = 1 
+    elif len(ml_results) > 2 and input_Data[-1]-np.mean(lessthanCurrent) <=  minMaxDiff:
+        dontTrade = 1
+    #nearestValue = np.find_nearest( ml_results, input_Data[-1] )
     
     #print("interval data")
 ##    if okUp ==1:
@@ -1287,9 +1306,22 @@ for x in xrange(100000):
 ##        # norm_data = np.histogram(filtered_sine, bins=10, density=True)
 ##        plt.hist(filtered_sine,10)
 ##        plt.title('filtered signal')
-##        plt.show()    
-##        print('current decision is approved and details are as follows', filtered_sine[-1])
-##        decision = input('enter input')
+##        plt.show()
+##    plt.figure(figsize=(20,10))
+##    plt.subplot(211)
+##    plt.plot(range(len( input_Data)), input_Data)
+##    plt.title('generated signal')
+##    for k in ml_results:
+##        plt.axhline(y=k)
+##    plt.subplot(212)
+
+##   # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##    plt.hist(filtered_sine,10)
+##    plt.title('filtered signal')
+##    plt.show()
+
+   # print('current decision is approved and details are as follows', filtered_sine[-1])
+   # decision = input('enter input')
    # time.sleep(5);
     #
     #(downmomentum == True and tradeDown == True and goDown == True and bandwidth >= 0.0012) or
@@ -1301,7 +1333,7 @@ for x in xrange(100000):
    # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 99):
    # if abs(trendStrength) >= 50 and np.sign(trendStrength) == 1 and doTrade == 1 and filtered_sine[-1] > 0:
    #if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 50):
-    if (filtered_sine[-1] <= -0.5 and  counterUpTrend>counterDownTrend and abs(trendStrength) > 15 and (sum(n < 0 for n in slopeRange)) == lastMinute):
+    if filtered_sine[-1] <= -0.5 and  counterUpTrend>counterDownTrend and abs(trendStrength) > 15 and sum(n < 0 for n in slopeRange) == lastMinute and len(ml_results) > 2 and dontTrade == 0:
         tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
@@ -1317,19 +1349,18 @@ for x in xrange(100000):
             errorList.append(error)
             plt.figure(figsize=(20,10))
             plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
+            plt.plot(range(len( input_Data)),input_Data)
             plt.title('generated signal')
+            for k in ml_results:
+                plt.axhline(y=k)
             plt.subplot(212)
            # norm_data = np.histogram(filtered_sine, bins=10, density=True)
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
-            for k in ml_results:
-                plt.axhline(y=k)
+
 
             #Change font size of x-axis    
-            plt.tick_params(axis='x', which='major', labelsize=6)
-            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
@@ -1353,24 +1384,23 @@ for x in xrange(100000):
             plt.subplot(211)
             plt.plot(range(len( input_Data)), input_Data)
             plt.title('generated signal')
+            for k in ml_results:
+                plt.axhline(y=k)
             plt.subplot(212)
            # norm_data = np.histogram(filtered_sine, bins=10, density=True)
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
-            for k in ml_results:
-                plt.axhline(y=k)
+
 
             #Change font size of x-axis    
-            plt.tick_params(axis='x', which='major', labelsize=6)
-            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
     #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001) or  (filtered_sine[-1] >= 0.5 and  totalDownCounts>totalUpCounts and trendStrength > 50):
-    elif  (filtered_sine[-1] >= 0.5 and  counterDownTrend>counterUpTrend and abs(trendStrength) > 15 and (sum(n > 0 for n in slopeRange)) == lastMinute):
+    elif  filtered_sine[-1] >= 0.5 and  counterDownTrend>counterUpTrend and abs(trendStrength) > 15 and (sum(n > 0 for n in slopeRange)) == lastMinute and len(ml_results) > 2 and dontTrade == 0:
     #elif abs(trendStrength) >= 50 and np.sign(trendStrength) == -1 and doTrade == 1 and filtered_sine[-1] < 0:
 ##        tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
@@ -1390,17 +1420,17 @@ for x in xrange(100000):
             plt.subplot(211)
             plt.plot(range(len( input_Data)), input_Data)
             plt.title('generated signal')
+            for k in ml_results:
+                plt.axhline(y=k)
             plt.subplot(212)
+
            # norm_data = np.histogram(filtered_sine, bins=10, density=True)
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
-            for k in ml_results:
-                plt.axhline(y=k)
+
 
             #Change font size of x-axis    
-            plt.tick_params(axis='x', which='major', labelsize=6)
-            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
@@ -1422,17 +1452,13 @@ for x in xrange(100000):
             plt.subplot(211)
             plt.plot(range(len( input_Data)), input_Data)
             plt.title('generated signal')
+            for k in ml_results:
+                plt.axhline(y=k)
             plt.subplot(212)
            # norm_data = np.histogram(filtered_sine, bins=10, density=True)
             plt.hist(filtered_sine,10)
             plt.title('filtered signal')
             plt.show()
-            for k in ml_results:
-                plt.axhline(y=k)
-
-            #Change font size of x-axis    
-            plt.tick_params(axis='x', which='major', labelsize=6)
-            plt.legend(loc = 'upper left', shadow = True)
             time.sleep(5);
             maxLossCounter = maxLossCounter+1
 
