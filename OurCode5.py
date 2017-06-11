@@ -1289,12 +1289,15 @@ for x in xrange(4000):
     if len(morethanCurrent) > 0 and len(lessthanCurrent) > 0:
         minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]
         bothfull = 1
-    if  input_Data[-1]  <= minValue and filtered_sine[-1] > 0 and  lowerSpace <= 0.1  :
-        goUp = 1
-        PredictionLag = 30
-    elif input_Data[-1]  >= maxValue and filtered_sine[-1] < 0 and  upperSpace <= 0.1:
+
+    if  input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.01) and morethanCurrent[0] == maxValue and filtered_sine[-1] < -0.15 and len(morethanCurrent) > 0 :
         goDown = 1
-        PredictionLag = 30
+        print('betting that price will continue downward after reaching maximum value')
+        PredictionLag = 60
+    elif input_Data[-1]  <= input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.01) and  lessthanCurrent[-1] == minValue and filtered_sine[-1] > 0.15 and len(lessthanCurrent) > 0:
+            goUp = 1
+            print('betting that price will continue upward after reaching minimum value')
+            PredictionLag = 60
     elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.5  and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.01):
         print('betting that price will reverse downwards once is close to upper threshold')
         goDown = 1
@@ -1335,7 +1338,7 @@ for x in xrange(4000):
         print('current decision is approved and details are as follows', filtered_sine[-1])
         decision = input('enter input')
    
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.5   and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1] and lessthanCurrent[-1] != minValue and input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.05):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.5   and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.05):
         print('betting the price will continue moving up once lower threshold broke significantly')
         goDown = 1
         PredictionLag = 30
@@ -1355,7 +1358,7 @@ for x in xrange(4000):
 ##        print('current decision is approved and details are as follows', filtered_sine[-1])
 ##        decision = input('enter input')
    
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.5  and np.amax(input_Data[-30:-1]) > morethanCurrent[0] and morethanCurrent[0] != maxValue  and input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.05):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.5  and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.05):
         print('betting the price will continue moving down once upper threshold broke significantly')
        
         goUp = 1
