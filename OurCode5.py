@@ -22,7 +22,7 @@ import trendy
 totalStart = time.time()
 sys.setrecursionlimit(30000000)
 
-ask = np.loadtxt('option_data135.txt', unpack=True,
+ask = np.loadtxt('option_data438.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
 #ask = ask[1210000:1700000]
@@ -1290,11 +1290,11 @@ for x in xrange(4000):
         minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]
         bothfull = 1
 
-    if  input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.01) and morethanCurrent[0] == maxValue and filtered_sine[-1] < -0.15 and len(morethanCurrent) > 0 :
+    if  len(morethanCurrent) > 0   and input_Data[-1] <=  morethanCurrent[0]*0.95 and morethanCurrent[0] == maxValue and filtered_sine[-1] > 0:
         goDown = 1
         print('betting that price will continue downward after reaching maximum value')
         PredictionLag = 60
-    elif input_Data[-1]  <= input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.01) and  lessthanCurrent[-1] == minValue and filtered_sine[-1] > 0.15 and len(lessthanCurrent) > 0:
+    elif len(lessthanCurrent) > 0 and  input_Data[-1] >=  lessthanCurrent[-1]*1.05 and  lessthanCurrent[-1] == minValue and filtered_sine[-1] < 0:
             goUp = 1
             print('betting that price will continue upward after reaching minimum value')
             PredictionLag = 60
@@ -1338,7 +1338,7 @@ for x in xrange(4000):
         print('current decision is approved and details are as follows', filtered_sine[-1])
         decision = input('enter input')
    
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.5   and input_Data[-1]  and np.amin(input_Data[-30:-1]) < lessthanCurrent[-1]  and input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.05):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0  and input_Data[-1]   and input_Data[-1] > minValue  and (input_Data[-1] >=  lessthanCurrent[-1]+(minMaxDiff*0.05) and input_Data[-1] <=  morethanCurrent[-1]+(minMaxDiff*0.95)):
         print('betting the price will continue moving up once lower threshold broke significantly')
         goDown = 1
         PredictionLag = 30
@@ -1358,7 +1358,7 @@ for x in xrange(4000):
 ##        print('current decision is approved and details are as follows', filtered_sine[-1])
 ##        decision = input('enter input')
    
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.5  and np.amax(input_Data[-30:-1]) > morethanCurrent[0]  and input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.05):
+    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < 0   and input_Data[-1] < maxValue and (input_Data[-1] <=  morethanCurrent[0]-(minMaxDiff*0.05) and input_Data[-1] >=  lessthanCurrent[0]-(minMaxDiff*0.95) ):
         print('betting the price will continue moving down once upper threshold broke significantly')
        
         goUp = 1
@@ -1430,8 +1430,8 @@ for x in xrange(4000):
    # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 99):
    # if abs(trendStrength) >= 50 and np.sign(trendStrength) == 1 and doTrade == 1 and filtered_sine[-1] > 0:
    #if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 50):
-   # if filtered_sine[-1] <= -0.5 and  counterUpTrend>counterDownTrend and abs(trendStrength) > 15 and sum(n < 0 for n in slopeRange) == lastMinute and  input_Data[-1] > maxValue:
-    if goUp == 1:
+    if filtered_sine[-1] <= -0.5 and  totalDownCounts>totalUpCounts and abs(trendStrength) > 60 and sum(n < 0 for n in slopeRange) == lastMinute or goUp ==1:
+    #if goUp == 1:
         tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
@@ -1498,9 +1498,9 @@ for x in xrange(4000):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
     #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001) or  (filtered_sine[-1] >= 0.5 and  totalDownCounts>totalUpCounts and trendStrength > 50):
-    #elif  filtered_sine[-1] >= 0.5 and  counterDownTrend>counterUpTrend and abs(trendStrength) > 15 and (sum(n > 0 for n in slopeRange)) == lastMinute and  input_Data[-1] < minValue:
+    elif  filtered_sine[-1] >= 0.5 and  totalUpCounts>totalDownCounts and abs(trendStrength) > 60 and (sum(n > 0 for n in slopeRange)) == lastMinute or goDown == 1:
     #elif abs(trendStrength) >= 50 and np.sign(trendStrength) == -1 and doTrade == 1 and filtered_sine[-1] < 0:
-    elif goDown == 1:
+    #elif goDown == 1:
 ##        tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
