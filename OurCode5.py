@@ -25,7 +25,7 @@ sys.setrecursionlimit(30000000)
 ask = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
                              )
-ask = ask[1680000:1700000]
+ask = ask[1580000:1700000]
 
 ask2 = np.loadtxt('5Years.txt', unpack=True,
                               delimiter=',', usecols = (0) 
@@ -762,6 +762,22 @@ def bb(prices, period, num_std_dev=2.0):
 
     return bbs
 
+def hurst(p):
+    tau = []; lagvec = []
+    #  Step through the different lags
+    for lag in range(2,20):
+        #  produce price difference with lag
+        pp = np.subtract(p[lag:],p[:-lag])
+        #  Write the different lags into a vector
+        lagvec.append(lag)
+        #  Calculate the variance of the differnce vector
+        tau.append(np.sqrt(np.std(pp)))
+    #  linear fit to double-log graph (gives power)
+    m = np.polyfit(np.log10(lagvec),np.log10(tau),1)
+    # calculate hurst
+    hurst = m[0]*2
+    return hurst
+
 
 def roc(prices, period=10):
     """
@@ -913,8 +929,10 @@ downTrendAv = []
 tradeCounter = 0
 doTrade = 0
 lastMinute = 30
+counta = 0
+counters = 0
 
-for x in xrange(10000):
+for x in xrange(40000):
     
     upmomentum = False
     downmomentum = False
@@ -937,6 +955,8 @@ for x in xrange(10000):
     if totalUpCounts > 100 or totalDownCounts > 100:
         totalUpCounts = 0
         totalDownCounts = 0
+    if counta == 1440:
+        counta = 0
         
   
     newPattern = []
@@ -1235,7 +1255,60 @@ for x in xrange(10000):
     print("trade counter is", tradeCounter)
     if abs(trendStrength) >= 99:
         doTrade = 1
+##    ourData = []
+##    cumulativeDev = []
+##    Dev = 0
+##    RS = 0
+##    means = []
+##    RSGraph = []
+##    R = 0
+##    dataLen = 600
+##    for i in range(dataLen): 
+##        meanPrice = np.mean(input_Data[-dataLen:i+dataLen])
+##        means.append(meanPrice)
+##    averageMean = np.mean(means)
+##    for i in range(dataLen):
+##        try:
+##            ourData =   input_Data[-dataLen:i+dataLen]
+##            meanPrice = np.mean(ourData)
+##            Dev = np.sum((i-averageMean for i in ourData))
+##            cumulativeDev.append(Dev)
+##            maxDev = np.amax(cumulativeDev)
+##            minDev = np.amin(cumulativeDev)
+##            R = (maxDev-minDev)
+##            S = (np.std(input_Data[-dataLen:i+dataLen]))
+##            RS = np.log(R/S)/np.log((i))
+##            RSGraph.append(RS)
+##        except ZeroDivisionError as e:
+##            #print('division by zero')
+##            RSGraph.append(0)
+##    RSGraph = np.nan_to_num(RSGraph)
+##    RSGraph = np.array(RSGraph)
+##    RSGraph = RSGraph.round(decimals=8)
+##    RSGraph[RSGraph == -inf] = 0
+##    RSGraph[RSGraph == inf] = 0
+##    #print('lngth of RS', RSGraph)    
+##    regr2 = linear_model.LinearRegression()
+##    slope_data2 = RSGraph
+##    time_interval2 = list(range(0,dataLen))
+##    x2 = np.array(time_interval2).reshape(len(time_interval2), 1)
+##    y2 = np.array(slope_data2).reshape(len(slope_data2), 1)
+##    #print(len(buy_data), len(time_interval))
+##    regr2.fit(x2, y2)
 
+    slope_buy2 = hurst(input_Data)
+##    if slope_buy2 >= 0.1:
+    print('Coefficients: \n',  slope_buy2)
+##        #plt.figure(figsize=(20,10))
+##        plt.subplot(211)
+##        plt.plot(range(len( input_Data)), input_Data)
+##        plt.title('generated signal')
+##       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##        plt.hist(filtered_sine,10)
+##        plt.title('filtered signal')
+##        plt.show()
+##        time.sleep(10)
+    
     regr = linear_model.LinearRegression()
     slope_data = input_Data[-lastMinute:toWhat]
     time_interval = list(range(0,lastMinute))
@@ -1251,134 +1324,159 @@ for x in xrange(10000):
        # print("slope is",  slope_ok)
     data2 = input_Data
     data2 = np.reshape(data2,(-1,25))
-    bandwidth = estimate_bandwidth(data2, quantile=0.1, n_samples=100)
-    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
-    # fit the data
-    ms.fit(data2)
-    ml_results = []
-    for k in range(len(np.unique(ms.labels_))):
-        my_members = ms.labels_ == k
-        values = data2[my_members, 0]    
-        #print values
-        
-        # find the edges
-        ml_results.append(min(values))
-        ml_results.append(max(values))
+    try:
+        bandwidth = estimate_bandwidth(data2, quantile=0.1, n_samples=500)
+        ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+        # fit the data
+        ms.fit(data2)
+        ml_results = []
+        for k in range(len(np.unique(ms.labels_))):
+            my_members = ms.labels_ == k
+            values = data2[my_members, 0]    
+            #print values
+            
+            # find the edges
+            ml_results.append(min(values))
+            ml_results.append(max(values))
 
 
 
-    ml_fuck = np.array(ml_results)
-    ml_results =  ml_fuck.flatten()
-    maxValue = np.amax(ml_results)
-    minValue = np.amin(ml_results)
-    currentShit = input_Data[-1]
-    lessthanCurrent = []
-    bothfull = 0
-    morethanCurrent = []
-    lowerSpace = abs(100*((input_Data[-1]-min_value)/input_Data[-2]))
-    lowerSpace = abs(lowerSpace-np.round(lowerSpace))
-    upperSpace = abs(100*((input_Data[-1]-max_value)/input_Data[-2]))
-    upperSpace = abs(upperSpace-np.round(upperSpace))
-    lessthanCurrent = ml_results[np.where(ml_results < currentShit)]
-    morethanCurrent = ml_results[np.where(ml_results >  currentShit)]
-    print('Maximum support is:' ,morethanCurrent)
-    print('current price is:' ,currentShit )
-    print('Minimum support is:' ,lessthanCurrent)
-    print(' lower space threshold is:',  lowerSpace)
-    print(' upper space threshold is:', upperSpace)
-    if len(morethanCurrent) > 0 and len(lessthanCurrent) > 0:
-        minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]
-        bothfull = 1
+        ml_fuck = np.array(ml_results)
+        ml_results =  ml_fuck.flatten()
+        maxValue = np.amax(ml_results)
+        minValue = np.amin(ml_results)
+        currentShit = input_Data[-1]
+        lessthanCurrent = []
+        bothfull = 0
+        PredictionLag = 30
+        morethanCurrent = []
+        lowerSpace = abs(100*((input_Data[-1]-min_value)/input_Data[-2]))
+        lowerSpace = abs(lowerSpace-np.round(lowerSpace))
+        upperSpace = abs(100*((input_Data[-1]-max_value)/input_Data[-2]))
+        upperSpace = abs(upperSpace-np.round(upperSpace))
+        lessthanCurrent = ml_results[np.where(ml_results < currentShit)]
+        morethanCurrent = ml_results[np.where(ml_results >  currentShit)]
+        print('Maximum support is:' ,morethanCurrent)
+        print('current price is:' ,currentShit )
+        print('Minimum support is:' ,lessthanCurrent)
+        print(' lower space threshold is:',  lowerSpace)
+        print(' upper space threshold is:', upperSpace)
+        if len(morethanCurrent) > 0 and len(lessthanCurrent) > 0:
+            minMaxDiff = morethanCurrent[0]-lessthanCurrent[-1]
+            bothfull = 1
 
-    if  len(morethanCurrent) > 0   and input_Data[-1] <=  morethanCurrent[0]*0.95 and morethanCurrent[0] == maxValue and filtered_sine[-1] > 0:
-        goDown = 1
-        print('betting that price will continue downward after reaching maximum value')
-        PredictionLag = 60
-    elif len(lessthanCurrent) > 0 and  input_Data[-1] >=  lessthanCurrent[-1]*1.05 and  lessthanCurrent[-1] == minValue and filtered_sine[-1] < 0:
-            goUp = 1
-            print('betting that price will continue upward after reaching minimum value')
+        if  len(morethanCurrent) > 0   and input_Data[-1] <=  morethanCurrent[0]*0.95 and morethanCurrent[0] == maxValue and filtered_sine[-1] > 0:
+            goDown = 1
+            print('betting that price will continue downward after reaching maximum value')
             PredictionLag = 60
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.5  and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.01):
-        print('betting that price will reverse downwards once is close to upper threshold')
-        goDown = 1
-        PredictionLag = 30
-        plt.figure(figsize=(20,10))
-        plt.subplot(211)
-        plt.plot(range(len( input_Data)), input_Data)
-        plt.title('generated signal')
-        for k in ml_results:
-            plt.axhline(y=k)
-        plt.subplot(212)
-
-       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-        plt.hist(filtered_sine,10)
-        plt.title('filtered signal')
-        plt.show()
-
-        print('current decision is approved and details are as follows', filtered_sine[-1])
-        decision = input('enter input')
-   
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.5  and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.01):
-        print('betting that price will reverse upwards once is close to lower threshold')
-        goUp = 1
-        PredictionLag = 30
-        plt.figure(figsize=(20,10))
-        plt.subplot(211)
-        plt.plot(range(len( input_Data)), input_Data)
-        plt.title('generated signal')
-        for k in ml_results:
-            plt.axhline(y=k)
-        plt.subplot(212)
-
-       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-        plt.hist(filtered_sine,10)
-        plt.title('filtered signal')
-        plt.show()
-
-        print('current decision is approved and details are as follows', filtered_sine[-1])
-        decision = input('enter input')
-   
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.1  and input_Data[-1]  and  np.mean(input_Data[-120:-1]) < morethanCurrent[0]  and input_Data[-1] > minValue  and (abs(input_Data[-1]-morethanCurrent[0])/morethanCurrent[0] < 0.0001  ):
-        print('betting the price will continue moving up once lower threshold broke significantly')
-        goDown = 1
-        PredictionLag = 30
-##        plt.figure(figsize=(20,10))
-##        plt.subplot(211)
-##        plt.plot(range(len( input_Data)), input_Data)
-##        plt.title('generated signal')
-##        for k in ml_results:
-##            plt.axhline(y=k)
-##        plt.subplot(212)
+##        elif len(lessthanCurrent) > 0 and  input_Data[-1] >=  lessthanCurrent[-1]*1.05 and  lessthanCurrent[-1] == minValue and filtered_sine[-1] < 0:
+##                goUp = 1
+##                print('betting that price will continue upward after reaching minimum value')
+##                PredictionLag = 60
+##        elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.5  and np.amax(input_Data[-30:-1]) < morethanCurrent[0]  and input_Data[-1] >=  morethanCurrent[0]-(minMaxDiff*0.01):
+##            print('betting that price will reverse downwards once is close to upper threshold')
+##            goDown = 1
+##            PredictionLag = 30
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
 ##
-##       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##        plt.hist(filtered_sine,10)
-##        plt.title('filtered signal')
-##        plt.show()
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
 ##
-##        print('current decision is approved and details are as follows', filtered_sine[-1])
-##        decision = input('enter input')
-   
-    elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.1 and np.mean(input_Data[-120:-1]) > lessthanCurrent[-1]   and input_Data[-1] < maxValue and (abs(input_Data[-1]-lessthanCurrent[-1])/lessthanCurrent[-1] < 0.0001 ):
-        print('betting the price will continue moving down once upper threshold broke significantly')
+##            print('current decision is approved and details are as follows', filtered_sine[-1])
+##            decision = input('enter input')
+##       
+##        elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.5  and np.amin(input_Data[-30:-1]) > lessthanCurrent[-1]  and input_Data[-1] <=  lessthanCurrent[-1]+(minMaxDiff*0.01):
+##            print('betting that price will reverse upwards once is close to lower threshold')
+##            goUp = 1
+##            PredictionLag = 15
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##            print('current decision is approved and details are as follows', filtered_sine[-1])
+##            decision = input('enter input')
        
-        goUp = 1
-        PredictionLag = 30
-##        plt.figure(figsize=(20,10))
-##        plt.subplot(211)
-##        plt.plot(range(len( input_Data)), input_Data)
-##        plt.title('generated signal')
-##        for k in ml_results:
-##            plt.axhline(y=k)
-##        plt.subplot(212)
+##        if len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] > 0.1   and  np.mean(input_Data[-120:-1]) < morethanCurrent[0]  and morethanCurrent[0] > maxValue  and (abs(input_Data[-1]-morethanCurrent[0])/morethanCurrent[0] < 0.0001  ):
+##            fuckinghell = abs(totalUpCounts-totalDownCounts)
+##            print('betting the price will continue moving up once lower threshold broke significantly') 
+##            if (1440-counta) < 1000:
+##                if np.mean(filtered_sine) < 0:
+##                   goDown = 1
+##                else:
+##                    goUp = 1
+##    
+##                   
+##            PredictionLag = 1440-counta
+##    ##        plt.figure(figsize=(20,10))
+##    ##        plt.subplot(211)
+##    ##        plt.plot(range(len( input_Data)), input_Data)
+##    ##        plt.title('generated signal')
+##    ##        for k in ml_results:
+##    ##            plt.axhline(y=k)
+##    ##        plt.subplot(212)
+##    ##
+##    ##       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##    ##        plt.hist(filtered_sine,10)
+##    ##        plt.title('filtered signal')
+##    ##        plt.show()
+##    ##
+##    ##        print('current decision is approved and details are as follows', filtered_sine[-1])
+##    ##        decision = input('enter input')
+##       
+##        elif len(ml_results) > 2 and bothfull == 1 and filtered_sine[-1] < -0.1 and np.mean(input_Data[-120:-1]) > lessthanCurrent[-1]   and lessthanCurrent[-1] == minValue and (abs(input_Data[-1]-lessthanCurrent[-1])/lessthanCurrent[-1] < 0.0001 ):
+##            fuckinghell = abs(totalUpCounts-totalDownCounts)
+##            print('betting the price will continue moving down once upper threshold broke significantly')
+##            if (1440-counta) < 1000:
+##                if  np.mean(filtered_sine) > 0:
+##                    goUp = 1
+##                else:
+##                        goDown = 1
 ##
-##       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##        plt.hist(filtered_sine,10)
-##        plt.title('filtered signal')
-##        plt.show()
-##
-##        print('current decision is approved and details are as follows', filtered_sine[-1])
-##        decision = input('enter input')
+##            PredictionLag = 1440-counta
+    ##        plt.figure(figsize=(20,10))
+    ##        plt.subplot(211)
+    ##        plt.plot(range(len( input_Data)), input_Data)
+    ##        plt.title('generated signal')
+    ##        for k in ml_results:
+    ##            plt.axhline(y=k)
+    ##        plt.subplot(212)
+    ##
+    ##       # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+    ##        plt.hist(filtered_sine,10)
+    ##        plt.title('filtered signal')
+    ##        plt.show()
+    ##
+    ##        print('current decision is approved and details are as follows', filtered_sine[-1])
+    ##        decision = input('enter input')
+    except ValueError as e:
+            print('no bandwidth')
    
+    properSlope = ((input_Data[-1]-input_Data[-500])/input_Data[-500])*100
+    if slope_buy2 > 0.55 and  abs(np.amin(filtered_sine[-500:-1]) > np.amax(filtered_sine[-500:-1])):
+        goDown = 1
+        print('go down please')
+        PredictionLag = 60
+    elif slope_buy2 > 0.55  and  abs(np.amin(filtered_sine[-500:-1]) < np.amax(filtered_sine[-500:-1])):
+        print('go up please')
+        goUp = 1
+        PredictionLag  = 60
     #nearestValue = np.find_nearest( ml_results, input_Data[-1] )
     
     #print("interval data")
@@ -1413,7 +1511,7 @@ for x in xrange(10000):
 ##    plt.subplot(212)
 ##
 ##   # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-##    plt.hist(filtered_sine,10)
+##    plt.hist(filtered_sine,10)totalDownCounts
 ##    plt.title('filtered signal')
 ##    plt.show()
 ##
@@ -1430,8 +1528,9 @@ for x in xrange(10000):
    # if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 99):
    # if abs(trendStrength) >= 50 and np.sign(trendStrength) == 1 and doTrade == 1 and filtered_sine[-1] > 0:
    #if (filtered_sine[-1] <= -1 and okUp == 1 and stdDev < 0.001) or (filtered_sine[-1] <= -0.5 and  totalUpCounts>totalDownCounts and trendStrength > 50):
-    if filtered_sine[-1] <= -0.8 and  totalDownCounts>totalUpCounts and abs(trendStrength) > 30 and sum(n < 0 for n in slopeRange) == lastMinute or goUp ==1:
-    #if goUp == 1:
+    counta = counta+1
+    #if filtered_sine[-1] <= -0.8 and  totalDownCounts>totalUpCounts and abs(trendStrength) > 30 and sum(n < 0 for n in slopeRange) == lastMinute or goUp ==1:
+    if goUp == 1:
         tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
@@ -1442,24 +1541,25 @@ for x in xrange(10000):
             win = win + 1
             pastWinStatus = 0
             print('trade won on up !!!, predictionLag was', PredictionLag)
+            print('Coefficients: \n',  slope_buy2)
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)),input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-
-
-            #Change font size of x-axis    
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)),input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##
+##            #Change font size of x-axis    
+##            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1474,33 +1574,34 @@ for x in xrange(10000):
             pastWinStatus = -1
             lossUp = lossUp + 1
             print('trade Lost on up prediction:(, prediction lag ', PredictionLag)
+            print('Coefficients: \n',  slope_buy2)
             numTrades = numTrades + 1
             error = abs(allData[toWhat + PredictionLag] - allData[toWhat] - average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-
-
-            #Change font size of x-axis    
-            time.sleep(5);
-            
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##
+##            #Change font size of x-axis    
+##            time.sleep(5);
+##            
    # elif ((filtered_sine[-1] >= 1 and range_diff < 0.1) or ( filtered_sine[-1] <= -1 and down_range>up_range and range_diff > 0.1) ):
     #elif ((fish_value > trend_value and filtered_sine[-1] > 1) or (trend_value > fish_value and filtered_sine[-1] < -0.8 and up_range<down_range and len_down>len_up and len_diff > 3)) and abs(trend_value-fish_value) > 20:
     #elif (filtered_sine[-1] < -1 and up_range<down_range and up_range > 0 and abs(range_diff) > 0.15 and len_down>len_up and len_diff > 1):
     #elif (filtered_sine[-1] >= 1 and okDown == 1 and stdDev < 0.001) or  (filtered_sine[-1] >= 0.5 and  totalDownCounts>totalUpCounts and trendStrength > 50):
-    elif  filtered_sine[-1] >= 0.8 and  totalUpCounts>totalDownCounts and abs(trendStrength) > 30 and (sum(n > 0 for n in slopeRange)) == lastMinute or goDown == 1:
+    #elif  filtered_sine[-1] >= 0.8 and  totalUpCounts>totalDownCounts and abs(trendStrength) > 30 and (sum(n > 0 for n in slopeRange)) == lastMinute or goDown == 1:
     #elif abs(trendStrength) >= 50 and np.sign(trendStrength) == -1 and doTrade == 1 and filtered_sine[-1] < 0:
-    #elif goDown == 1:
+    elif goDown == 1:
 ##        tradeCounter = tradeCounter + 1
 ##        if tradeCounter == 5:
 ##            doTrade = 0
@@ -1512,25 +1613,26 @@ for x in xrange(10000):
             win = win + 1
             pastWinStatus = 0
             print('trade won on down!!! prediction lag was', PredictionLag)
+            print('Coefficients: \n', slope_buy2)
             numTrades = numTrades + 1
             error=abs(allData[toWhat+PredictionLag] - allData[toWhat]-average)
             errorList.append(error)
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-
-
-            #Change font size of x-axis    
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##
+##
+##            #Change font size of x-axis    
+##            time.sleep(5);
             if maxLossCounter>totalLossCounter :
                totalLossCounter=maxLossCounter
                maxLossCounter=0;
@@ -1543,22 +1645,23 @@ for x in xrange(10000):
             pastWinStatus = -1
             loss = loss + 1
             print('trade Lost on fdown prediction:(, prediction lag was' , PredictionLag)
+            print('Coefficients: \n',  slope_buy2)
             numTrades = numTrades + 1
             error=abs(ask[toWhat+PredictionLag] - ask[toWhat]-average)
             errorList.append(error)
             maxLossCounter = maxLossCounter+1
-            plt.figure(figsize=(20,10))
-            plt.subplot(211)
-            plt.plot(range(len( input_Data)), input_Data)
-            plt.title('generated signal')
-            for k in ml_results:
-                plt.axhline(y=k)
-            plt.subplot(212)
-           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
-            plt.hist(filtered_sine,10)
-            plt.title('filtered signal')
-            plt.show()
-            time.sleep(5);
+##            plt.figure(figsize=(20,10))
+##            plt.subplot(211)
+##            plt.plot(range(len( input_Data)), input_Data)
+##            plt.title('generated signal')
+##            for k in ml_results:
+##                plt.axhline(y=k)
+##            plt.subplot(212)
+##           # norm_data = np.histogram(filtered_sine, bins=10, density=True)
+##            plt.hist(filtered_sine,10)
+##            plt.title('filtered signal')
+##            plt.show()
+##            time.sleep(5);
             maxLossCounter = maxLossCounter+1
 
             # get the last price, get the future price. find percentage change and compare to predicted
